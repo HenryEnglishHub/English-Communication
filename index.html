@@ -1415,6 +1415,245 @@ window.addEventListener('pagehide',()=>stopAll());
 let v4MicGestureDone=false;
 document.addEventListener('pointerdown',()=>{if(!v4MicGestureDone&&micPermissionState==='unknown'){v4MicGestureDone=true;requestMicrophoneAccess(true)}},{once:false,capture:true});
 
+
+// ===== V6 AUDIO + MOBILE ALPHABET RELIABILITY PATCH =====
+// British-English female voice preference, one-tap flying letters on touch devices,
+// letter-name-only audio, and hard-stop cleanup when leaving any activity.
+
+const __v6NativeSetTimeout = window.setTimeout.bind(window);
+const __v6NativeClearTimeout = window.clearTimeout.bind(window);
+const __v6NativeSetInterval = window.setInterval.bind(window);
+const __v6NativeClearInterval = window.clearInterval.bind(window);
+const __v6Timeouts = new Set();
+const __v6Intervals = new Set();
+window.setTimeout = function(fn, delay, ...args){
+  let id = __v6NativeSetTimeout(function(){ __v6Timeouts.delete(id); if(typeof fn==='function') fn(...args); }, delay);
+  __v6Timeouts.add(id); return id;
+};
+window.clearTimeout = function(id){ __v6Timeouts.delete(id); return __v6NativeClearTimeout(id); };
+window.setInterval = function(fn, delay, ...args){
+  const id = __v6NativeSetInterval(fn, delay, ...args); __v6Intervals.add(id); return id;
+};
+window.clearInterval = function(id){ __v6Intervals.delete(id); return __v6NativeClearInterval(id); };
+function __v6ClearScheduledWork(){
+  for(const id of [...__v6Timeouts]) __v6NativeClearTimeout(id);
+  __v6Timeouts.clear();
+  for(const id of [...__v6Intervals]) __v6NativeClearInterval(id);
+  __v6Intervals.clear();
+}
+
+let __v6SpeechSeq = 0;
+let __v6BritishFemaleVoice = null;
+function __v6VoiceScore(v){
+  const name=(v?.name||'').toLowerCase(), lang=(v?.lang||'').replace('_','-').toLowerCase();
+  let score=0;
+  if(lang==='en-gb') score+=100;
+  else if(lang.startsWith('en-gb')) score+=95;
+  else if(lang.startsWith('en')) score+=15;
+  const femaleHints=['google uk english female','sonia','hazel','libby','martha','serena','kate','maisie','susan','female'];
+  const maleHints=['daniel','george','ryan','oliver','arthur','male'];
+  if(femaleHints.some(x=>name.includes(x))) score+=80;
+  if(maleHints.some(x=>name.includes(x))) score-=70;
+  if(v?.localService) score+=4;
+  return score;
+}
+function __v6ChooseBritishFemaleVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const voices=speechSynthesis.getVoices?.()||[];
+  if(!voices.length) return __v6BritishFemaleVoice;
+  const ranked=[...voices].sort((a,b)=>__v6VoiceScore(b)-__v6VoiceScore(a));
+  const best=ranked.find(v=>__v6VoiceScore(v)>=100) || ranked.find(v=>(v.lang||'').toLowerCase().startsWith('en-gb')) || ranked.find(v=>(v.lang||'').toLowerCase().startsWith('en')) || null;
+  if(best) __v6BritishFemaleVoice=best;
+  return __v6BritishFemaleVoice;
+}
+if('speechSynthesis' in window){
+  __v6ChooseBritishFemaleVoice();
+  const prevVoicesChanged=speechSynthesis.onvoiceschanged;
+  speechSynthesis.onvoiceschanged=function(e){ try{prevVoicesChanged?.call(this,e)}catch(_e){} __v6ChooseBritishFemaleVoice(); };
+}
+
+speak = function(text,times=1,options={}){
+  if(!soundOn || !('speechSynthesis' in window) || !text) return Promise.resolve();
+  const mySeq=++__v6SpeechSeq;
+  try{speechSynthesis.cancel()}catch(e){}
+  return new Promise(resolve=>{
+    let n=0;
+    const go=()=>{
+      if(mySeq!==__v6SpeechSeq) return; // hard stop: never continue a cancelled activity
+      const u=new SpeechSynthesisUtterance(String(text));
+      u.lang='en-GB';
+      u.rate=options.rate ?? .90;
+      u.pitch=options.pitch ?? 1.06;
+      const v=__v6ChooseBritishFemaleVoice(); if(v)u.voice=v;
+      u.onend=()=>{
+        if(mySeq!==__v6SpeechSeq) return;
+        n++;
+        if(n<times) window.setTimeout(go, options.gap ?? 170); else resolve();
+      };
+      u.onerror=()=>{ if(mySeq===__v6SpeechSeq) resolve(); };
+      try{speechSynthesis.speak(u)}catch(e){ if(mySeq===__v6SpeechSeq) resolve(); }
+    };
+    go();
+  });
+};
+
+toggleSound = function(btn){
+  soundOn=!soundOn; __v6SpeechSeq++; try{speechSynthesis?.cancel()}catch(e){}
+  if(btn)btn.textContent=soundOn?'🔊':'🔇';
+};
+
+// Use spoken letter-name cues so mobile TTS says “A / B / C”, never “capital A”.
+const LETTER_AUDIO_NAME={
+ A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'gee',H:'aitch',I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'are',S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zed'
+};
+const NUMBER_AUDIO_NAME={'0':'zero','1':'one','2':'two','3':'three','4':'four','5':'five','6':'six','7':'seven','8':'eight','9':'nine'};
+speakLetter = async function(letter){
+  const key=String(letter||'').toUpperCase();
+  await speak(LETTER_AUDIO_NAME[key]||String(letter||''),1,{rate:.86,pitch:1.06});
+};
+speakSpelling = async function(word,times=1){
+  const chars=String(word||'').toUpperCase().replace(/[^A-Z]/g,'').split('');
+  const spoken=chars.map(c=>LETTER_AUDIO_NAME[c]||c).join(', ');
+  const token=alphabetToken;
+  for(let i=0;i<times;i++){
+    if(token!==alphabetToken || !alphaState) return;
+    if(i) await sleep(260);
+    if(token!==alphabetToken || !alphaState) return;
+    await speak(spoken,1,{rate:.78,pitch:1.06});
+  }
+};
+speakCode = async function(code,times=2){
+  const spoken=String(code||'').toUpperCase().split('').map(c=>NUMBER_AUDIO_NAME[c]||LETTER_AUDIO_NAME[c]||c).join(', ');
+  const token=alphabetToken;
+  for(let i=0;i<times;i++){
+    if(token!==alphabetToken || !alphaState) return;
+    if(i) await sleep(300);
+    if(token!==alphabetToken || !alphaState) return;
+    await speak(spoken,1,{rate:.80,pitch:1.06});
+  }
+};
+
+playLetterQuizPrompt = async function(){
+  const r=alphaState;if(!r||r.answered)return;
+  const token=r.token, round=r.i;
+  await speakLetter(r.target);
+  if(token!==alphabetToken || alphaState!==r || r.answered || r.i!==round)return;
+  await sleep(420);
+  if(token!==alphabetToken || alphaState!==r || r.answered || r.i!==round)return;
+  await speakLetter(r.target);
+};
+playFlyingPrompt = async function(){
+  const r=alphaState;if(!r||r.answered)return;
+  const token=r.token, round=r.i;
+  await speakLetter(r.target);
+  if(token!==alphabetToken || alphaState!==r || r.answered || r.i!==round)return;
+  await sleep(320);
+  if(token!==alphabetToken || alphaState!==r || r.answered || r.i!==round)return;
+  await speakLetter(r.target);
+};
+
+// Re-render Flying Letters with pointer-down handling: one touch is enough on iPhone/Android.
+renderLetterFly = function(){
+  const r=alphaState;if(!r||r.i>=r.items.length){showCelebration((r?.score||0)*100,(r?.items?.length||26)*100,'Flying Letters!');return}
+  r.answered=false;r.target=r.items[r.i];alphaFlyToken++;const token=alphaFlyToken;
+  const mobile=window.matchMedia('(max-width:720px),(pointer:coarse)').matches;
+  const distractorCount=mobile?8:11;
+  const pool=shuffle(ALPHABET.filter(x=>x!==r.target)).slice(0,distractorCount);
+  const opts=shuffle([r.target,...pool]);
+  alphaShell(`<div class="alpha-card" style="justify-content:flex-start"><div class="mini-kicker">FLYING LETTERS • ${r.i+1} / ${r.items.length}</div><div class="alpha-scoreline"><span id="flyPrompt">🎧 Listen carefully</span><span>Score: <b>${r.score*100}</b></span></div>
+  <div id="alphaFlyField" class="alpha-fly-field">${opts.map(x=>`<button type="button" class="flying-letter" data-letter="${x}" aria-label="Letter ${x}">${x}</button>`).join('')}</div>
+  <div class="alpha-controls"><button class="back" onclick="stopAll();renderAlphabetHub()">← Menu</button><button class="replay" onclick="playFlyingPrompt()">🔊 Replay</button></div></div>`);
+  initAlphaFly(token);
+  const field=$('#alphaFlyField');
+  $$('.flying-letter',field).forEach(el=>{
+    let lastTouch=0;
+    const activate=e=>{
+      if(e){e.preventDefault();e.stopPropagation()}
+      const now=Date.now(); if(now-lastTouch<350)return; lastTouch=now;
+      hitFlyingLetter(el.dataset.letter,el);
+    };
+    el.addEventListener('pointerdown',activate,{passive:false});
+    // click fallback for keyboard/mouse browsers without useful pointer events
+    el.addEventListener('click',e=>{if(Date.now()-lastTouch>450)activate(e)});
+  });
+  window.setTimeout(playFlyingPrompt,180);
+};
+
+initAlphaFly = function(token){
+  const field=$('#alphaFlyField');if(!field)return;
+  alphaFlyPositions.clear();const W=field.clientWidth,H=field.clientHeight;
+  const mobile=window.matchMedia('(max-width:720px),(pointer:coarse)').matches;
+  $$('.flying-letter',field).forEach(el=>{
+    const ew=el.offsetWidth||72,eh=el.offsetHeight||72;
+    const speed=mobile?(.22+Math.random()*.22):(.40+Math.random()*.34);
+    const p={x:8+Math.random()*Math.max(1,W-ew-16),y:8+Math.random()*Math.max(1,H-eh-16),vx:(Math.random()>.5?1:-1)*speed,vy:(Math.random()>.5?1:-1)*speed*.9};
+    alphaFlyPositions.set(el,p);el.style.transform=`translate3d(${p.x}px,${p.y}px,0)`;
+  });
+  let last=performance.now();
+  function tick(now){
+    if(token!==alphaFlyToken||!document.body.contains(field))return;
+    const dt=Math.min(2,(now-last)/16.7);last=now;const w=field.clientWidth,h=field.clientHeight;
+    alphaFlyPositions.forEach((p,el)=>{
+      const ew=el.offsetWidth,eh=el.offsetHeight;p.x+=p.vx*dt;p.y+=p.vy*dt;
+      if(p.x<2||p.x+ew>w-2){p.vx*=-1;p.x=Math.max(2,Math.min(p.x,w-ew-2))}
+      if(p.y<2||p.y+eh>h-2){p.vy*=-1;p.y=Math.max(2,Math.min(p.y,h-eh-2))}
+      el.style.transform=`translate3d(${p.x}px,${p.y}px,0)`;
+    });
+    alphaFlyRaf=requestAnimationFrame(tick);
+  }
+  alphaFlyRaf=requestAnimationFrame(tick);
+};
+
+hitFlyingLetter = function(letter,el){
+  const r=alphaState;if(!r||r.answered||!el)return;
+  if(letter===r.target){
+    r.answered=true;r.score++;__v6SpeechSeq++;try{speechSynthesis.cancel()}catch(e){}
+    if(alphaFlyRaf){cancelAnimationFrame(alphaFlyRaf);alphaFlyRaf=null}
+    el.classList.add('correct');clickSound('ok');if($('#flyPrompt'))$('#flyPrompt').textContent='✅ Correct!';
+    window.setTimeout(()=>{if(alphaState!==r)return;r.i++;renderLetterFly()},430);
+  }else{
+    el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');clickSound('bad');
+    window.setTimeout(()=>el?.classList?.remove('wrong'),300);
+  }
+};
+
+const __v6BaseStopAll = stopAll;
+stopAll = function(resetRun=true){
+  __v6SpeechSeq++;
+  __v6ClearScheduledWork();
+  try{speechSynthesis?.cancel()}catch(e){}
+  alphaFlyToken++;
+  alphabetToken++;
+  if(alphaFlyRaf){try{cancelAnimationFrame(alphaFlyRaf)}catch(e){} alphaFlyRaf=null}
+  alphaFlyPositions.clear();
+  if(alphaTimer){try{__v6NativeClearInterval(alphaTimer)}catch(e){} alphaTimer=null}
+  // invalidate every Alphabet async task immediately
+  alphaState=null;
+  try{recognition?.abort()}catch(e){}
+  try{wordPracticeRecognition?.abort()}catch(e){}
+  try{if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop()}catch(e){}
+  try{__v6BaseStopAll(resetRun)}catch(e){}
+};
+
+// Any direct page/activity navigation first performs a hard stop.
+['renderBooks','renderLessons','renderLesson','openSection','renderAlphabetHub'].forEach(name=>{
+  const original=window[name];
+  if(typeof original!=='function')return;
+  window[name]=function(...args){ stopAll(); return original.apply(this,args); };
+});
+
+// Mobile touch tuning for moving-letter targets.
+const __v6Style=document.createElement('style');
+__v6Style.textContent=`
+.flying-letter{touch-action:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important;cursor:pointer;will-change:transform;z-index:4;min-width:72px;min-height:72px}
+.alpha-fly-field{touch-action:none;overscroll-behavior:contain}
+@media (max-width:720px),(pointer:coarse){
+ .flying-letter{width:72px!important;height:72px!important;min-width:72px!important;min-height:72px!important;font-size:31px!important;border-radius:20px!important;border-width:3px!important;box-shadow:0 12px 25px rgba(11,31,77,.16)!important}
+ .alpha-fly-field{height:61dvh!important;min-height:390px!important}
+}
+`;
+document.head.appendChild(__v6Style);
+
 renderLogin();
 </script>
 </body>
