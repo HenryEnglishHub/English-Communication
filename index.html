@@ -1750,6 +1750,129 @@ __v7Style.textContent=`
 document.head.appendChild(__v7Style);
 // ===== END V7 COLORS BOOK =====
 
+
+// ===== V7.4 ONE-TAP FLYING GAME PATCH =====
+// All moving-word/letter games score immediately on the first correct touch/click.
+function __bindOneTapFlyingWords(field){
+  if(!field)return;
+  $$('.flying-word',field).forEach(el=>{
+    let lastPointer=0;
+    const activate=e=>{
+      if(e){e.preventDefault();e.stopPropagation()}
+      const now=Date.now();
+      if(now-lastPointer<260)return;
+      lastPointer=now;
+      hitWord(Number(el.dataset.id),el);
+    };
+    if(window.PointerEvent) el.addEventListener('pointerdown',activate,{passive:false});
+    else el.addEventListener('touchstart',activate,{passive:false});
+    el.addEventListener('click',e=>{if(Date.now()-lastPointer>360)activate(e)});
+  });
+}
+
+renderFind = function(){
+  $('#modalOverlay')?.remove();
+  const r=savedRun;if(!r)return;
+  r.remaining=[...r.items];
+  document.body.insertAdjacentHTML('beforeend',`<div id="findGame" class="find-overlay"><div class="find-header"><div class="score-block">Score<strong id="findScore">0</strong></div><div class="target-panel"><b>Listen carefully</b><br><button type="button" onclick="replayTarget()">🔊 Replay</button></div><button type="button" class="find-close" onclick="endFindEarly()">×</button></div><div id="wordField" class="word-field">${r.remaining.map(x=>`<button type="button" class="flying-word" data-id="${x._id}" aria-label="${esc(x.term)}">${esc(x.term)}</button>`).join('')}</div></div>`);
+  const field=$('#wordField');
+  __bindOneTapFlyingWords(field);
+  initFlying();
+  nextTarget();
+};
+
+hitWord = function(id,el){
+  const r=savedRun;
+  if(!r||!r.target||!el||el.dataset.resolved==='1')return;
+  if(id===r.target._id){
+    // Lock this word instantly so a second touch can never add points twice.
+    el.dataset.resolved='1';
+    el.disabled=true;
+    const target=r.target;
+    r.target=null;
+
+    // SCORE FIRST: update state + screen immediately on the first correct touch.
+    r.score+=100;
+    const scoreEl=$('#findScore'); if(scoreEl)scoreEl.textContent=String(r.score);
+    el.classList.add('correct');
+    document.body.insertAdjacentHTML('beforeend','<div class="plus-score">+100</div>');
+    window.setTimeout(()=>$('.plus-score')?.remove(),620);
+
+    // Stop the current 3x prompt immediately after a correct answer.
+    try{if(typeof __v6SpeechSeq!=='undefined')__v6SpeechSeq++}catch(e){}
+    try{speechSynthesis?.cancel()}catch(e){}
+    clickSound('ok');
+
+    r.remaining=r.remaining.filter(x=>x._id!==id);
+    r.positions.delete(id);
+    window.setTimeout(()=>{
+      try{el.remove()}catch(e){}
+      if(savedRun!==r)return;
+      nextTarget();
+    },260);
+  }else{
+    el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
+    clickSound('bad');
+    window.setTimeout(()=>el?.classList?.remove('wrong'),280);
+  }
+};
+
+// Alphabet Flying Letters: show the new score at the exact moment the correct letter is touched.
+const __v74RenderLetterFlyBase = renderLetterFly;
+renderLetterFly = function(){
+  const r=alphaState;
+  if(!r||r.i>=r.items.length){showCelebration((r?.score||0)*100,(r?.items?.length||26)*100,'Flying Letters!');return}
+  r.answered=false;r.target=r.items[r.i];alphaFlyToken++;const token=alphaFlyToken;
+  const mobile=window.matchMedia('(max-width:720px),(pointer:coarse)').matches;
+  const distractorCount=mobile?8:11;
+  const pool=shuffle(ALPHABET.filter(x=>x!==r.target)).slice(0,distractorCount);
+  const opts=shuffle([r.target,...pool]);
+  alphaShell(`<div class="alpha-card" style="justify-content:flex-start"><div class="mini-kicker">FLYING LETTERS • ${r.i+1} / ${r.items.length}</div><div class="alpha-scoreline"><span id="flyPrompt">🎧 Listen carefully</span><span>Score: <b id="alphaFlyScore">${r.score*100}</b></span></div>
+  <div id="alphaFlyField" class="alpha-fly-field">${opts.map(x=>`<button type="button" class="flying-letter" data-letter="${x}" aria-label="Letter ${x}">${x}</button>`).join('')}</div>
+  <div class="alpha-controls"><button class="back" onclick="stopAll();renderAlphabetHub()">← Menu</button><button class="replay" onclick="playFlyingPrompt()">🔊 Replay</button></div></div>`);
+  initAlphaFly(token);
+  const field=$('#alphaFlyField');
+  $$('.flying-letter',field).forEach(el=>{
+    let lastTouch=0;
+    const activate=e=>{
+      if(e){e.preventDefault();e.stopPropagation()}
+      const now=Date.now(); if(now-lastTouch<260)return; lastTouch=now;
+      hitFlyingLetter(el.dataset.letter,el);
+    };
+    if(window.PointerEvent)el.addEventListener('pointerdown',activate,{passive:false});
+    else el.addEventListener('touchstart',activate,{passive:false});
+    el.addEventListener('click',e=>{if(Date.now()-lastTouch>360)activate(e)});
+  });
+  window.setTimeout(playFlyingPrompt,180);
+};
+
+hitFlyingLetter = function(letter,el){
+  const r=alphaState;if(!r||r.answered||!el)return;
+  if(letter===r.target){
+    r.answered=true;
+    r.score++;
+    const scoreEl=$('#alphaFlyScore');if(scoreEl)scoreEl.textContent=String(r.score*100);
+    try{__v6SpeechSeq++}catch(e){};try{speechSynthesis.cancel()}catch(e){}
+    if(alphaFlyRaf){cancelAnimationFrame(alphaFlyRaf);alphaFlyRaf=null}
+    el.disabled=true;el.classList.add('correct');clickSound('ok');if($('#flyPrompt'))$('#flyPrompt').textContent='✅ Correct! +100';
+    window.setTimeout(()=>{if(alphaState!==r)return;r.i++;renderLetterFly()},330);
+  }else{
+    el.classList.remove('wrong');void el.offsetWidth;el.classList.add('wrong');clickSound('bad');
+    window.setTimeout(()=>el?.classList?.remove('wrong'),260);
+  }
+};
+
+const __v74FlyStyle=document.createElement('style');
+__v74FlyStyle.textContent=`
+.flying-word{touch-action:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important;cursor:pointer;will-change:transform}
+.flying-word:disabled{opacity:1!important}
+@media(max-width:720px),(pointer:coarse){
+ .flying-word{min-height:54px!important;padding:13px 16px!important;font-size:15px!important;border-radius:17px!important}
+}
+`;
+document.head.appendChild(__v74FlyStyle);
+// ===== END V7.4 ONE-TAP FLYING GAME PATCH =====
+
 renderLogin();
 </script>
 <style>
