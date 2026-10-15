@@ -674,7 +674,7 @@ function renderLearning(name){
  <div class="learning-head"><div><h1 style="margin:0;color:var(--navy);font-family:Georgia,serif;font-size:clamp(36px,4vw,58px)">${esc(name)}</h1><p style="color:var(--muted)">Chọn chính xác những mục bạn muốn học.</p></div>
  <div class="toolbar"><input id="itemSearch" class="search" placeholder="Tìm từ / cụm..." oninput="filterItems()"><button onclick="selectVisible(true)">✓ Chọn tất cả</button><button onclick="selectVisible(false)">Bỏ chọn</button></div></div>
  <div id="itemGrid" class="item-grid">${items.map((it,i)=>`<label class="item-card" data-search="${esc((it.term+' '+it.meaning+' '+it.example).toLowerCase())}"><input class="learn-check" type="checkbox" value="${i}" checked onchange="updateSelectedCount()"><div><div class="item-term">${esc(it.term)}</div>${it.ipa?`<div class="item-sub">${esc(it.ipa)} ${it.pos?'• '+esc(it.pos):''}</div>`:''}${it.meaning?`<div class="item-sub">${esc(it.meaning)}</div>`:''}${it.example?`<div class="item-sub"><i>${esc(it.example)}</i></div>`:''}</div><button class="audio-btn" type="button" onclick="event.preventDefault();speak('${jsq(it.term)}')">🔊</button></label>`).join('')}</div>
- <div class="practice-bar"><div class="selected-count"><span id="selectedCount">${items.length}</span> selected</div><button onclick="startFlash()">🃏 Flashcard</button><button onclick="startMCQ()">❓ Trắc nghiệm</button><button onclick="startMatching()">🔗 Nối từ</button><button class="game" onclick="startFind()">🎧 Listen & Find</button></div>
+ <div class="practice-bar"><div class="selected-count"><span id="selectedCount">${items.length}</span> selected</div><button onclick="startFlash()">🃏 Flashcard</button><button onclick="startMCQ()">❓ Trắc nghiệm</button><button onclick="startMatching()">🔗 Nối từ</button><button class="game" onclick="startFind()">🎧 Listen & Find</button><button class="v8-game-entry" onclick="startVNSpeak()">🎙 Nghe Việt • Nói Anh</button><button class="v9-game-entry" onclick="startVNMCQ()">🇻🇳 Nghe Việt • Chọn Anh</button></div>
  </main></div>`;
 }
 function jsq(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ')}
@@ -914,15 +914,43 @@ let alphabetToken=0, alphaState=null, alphaTimer=null, wordPracticeRecognition=n
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 function normalizeSpeechWord(s){return String(s||'').toLowerCase().replace(/[^a-z']/g,'').trim()}
+// One permission request for the whole app. Each lesson/game consumes the same
+// origin permission; we stop the initial temporary stream immediately for privacy.
+let __henryMicAsked=false, __henryMicPromise=null;
 function requestMicrophoneAccess(auto=false){
- if(!navigator.mediaDevices?.getUserMedia){micPermissionState='unsupported';refreshMicUI();return Promise.resolve(false)}
- return navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
-   stream.getTracks().forEach(t=>t.stop());micPermissionState='granted';refreshMicUI();return true;
+ if(micPermissionState==='granted')return Promise.resolve(true);
+ if(__henryMicPromise)return __henryMicPromise;
+ if(__henryMicAsked || micPermissionState==='denied' || micPermissionState==='blocked' || micPermissionState==='unsupported'){
+   return Promise.resolve(false); // Never launch a second browser permission prompt.
+ }
+ if(!navigator.mediaDevices?.getUserMedia || !window.isSecureContext){
+   micPermissionState='unsupported';refreshMicUI();return Promise.resolve(false);
+ }
+ __henryMicAsked=true;
+ __henryMicPromise=navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+   stream.getTracks().forEach(t=>t.stop());
+   micPermissionState='granted';refreshMicUI();return true;
  }).catch(err=>{
-   micPermissionState=err?.name==='NotAllowedError'?'denied':'blocked';refreshMicUI();
-   if(!auto) showMicToast('Microphone chưa được cấp quyền','Hãy chọn Allow/Cho phép để website ghi âm và tạo transcript khi luyện Speaking.');
-   return false;
+   micPermissionState=(err?.name==='NotAllowedError'||err?.name==='PermissionDeniedError')?'denied':'blocked';
+   refreshMicUI();return false;
  });
+ return __henryMicPromise;
+}
+function henryMicHelp(){
+ const msg=micPermissionState==='granted'?'Microphone đã được cấp quyền cho website.':
+ 'Website chỉ chủ động xin quyền microphone một lần. Nếu đã từ chối, hãy cấp quyền trong cài đặt của trình duyệt (biểu tượng ổ khóa / quyền trang web), rồi tải lại trang. Game không tự hỏi lại.';
+ showMicToast('Quyền microphone dùng chung',msg);
+}
+// Read current browser permission silently; never trigger a permission dialog here.
+if(navigator.permissions?.query){
+ navigator.permissions.query({name:'microphone'}).then(p=>{
+   const sync=()=>{
+     if(p.state==='granted'){micPermissionState='granted';refreshMicUI()}
+     else if(p.state==='denied'){micPermissionState='denied';refreshMicUI()}
+     else if(!__henryMicAsked){micPermissionState='unknown';refreshMicUI()}
+   };
+   sync();p.addEventListener?.('change',sync);
+ }).catch(()=>{});
 }
 function refreshMicUI(){
  const el=$('#micPill');if(!el)return;
@@ -931,12 +959,12 @@ function refreshMicUI(){
  else{el.className='mic-pill';el.innerHTML='🎤 Microphone'}
 }
 function showMicToast(title,msg){
- $('#micToast')?.remove();document.body.insertAdjacentHTML('beforeend',`<div id="micToast" class="mic-toast"><b>${esc(title)}</b>${esc(msg)}<br><button onclick="requestMicrophoneAccess(false);$('#micToast')?.remove()">Cho phép microphone</button></div>`);
+ $('#micToast')?.remove();document.body.insertAdjacentHTML('beforeend',`<div id="micToast" class="mic-toast"><b>${esc(title)}</b>${esc(msg)}<br><button onclick="$('#micToast')?.remove()">Đã hiểu</button></div>`);
  setTimeout(()=>$('#micToast')?.remove(),9000);
 }
 function topbar(extra=''){
  return `<header class="topbar"><button class="brand" onclick="${state.logged?'renderBooks()':'renderLogin()'}" style="border:0;background:none;padding:0"><span class="brand-mark"><i>✦</i></span><span>Henry English</span></button>
- <div class="nav-actions">${state.logged?`<button class="nav-btn hide-mobile" onclick="renderBooks()">📚 Books</button>`:''}${extra}<button id="micPill" class="mic-pill ${micPermissionState==='granted'?'ok':micPermissionState==='denied'?'warn':''}" onclick="requestMicrophoneAccess(false)">${micPermissionState==='granted'?'🎤 Mic ready':micPermissionState==='denied'?'🎤 Mic blocked':'🎤 Microphone'}</button><button class="nav-btn" onclick="toggleSound(this)">${soundOn?'🔊':'🔇'}</button></div></header>`;
+ <div class="nav-actions">${state.logged?`<button class="nav-btn hide-mobile" onclick="renderBooks()">📚 Books</button>`:''}${extra}<button id="micPill" class="mic-pill ${micPermissionState==='granted'?'ok':micPermissionState==='denied'?'warn':''}" onclick="henryMicHelp()">${micPermissionState==='granted'?'🎤 Mic ready':micPermissionState==='denied'?'🎤 Mic blocked':'🎤 Microphone'}</button><button class="nav-btn" onclick="toggleSound(this)">${soundOn?'🔊':'🔇'}</button></div></header>`;
 }
 function renderLogin(){
  state={logged:false,book:null,lesson:null,section:null,modal:null,run:null}; stopAll();
@@ -952,9 +980,9 @@ function renderLogin(){
  </div></section>
  <section class="hero-visual"><img src="${HERO}" alt="Henry English communication learning"></section>
  </main></div>`;
- setTimeout(()=>$('#access')?.focus(),100);setTimeout(()=>requestMicrophoneAccess(true),350);
+ setTimeout(()=>$('#access')?.focus(),100);
 }
-function login(e){e.preventDefault();const v=$('#access').value.trim();if(v===ACCESS_CODE){state.logged=true;clickSound('ok');requestMicrophoneAccess(true);renderBooks()}else{$('#loginError').textContent='Mã đăng nhập chưa đúng. Vui lòng thử lại.';clickSound('bad')}}
+function login(e){e.preventDefault();const v=$('#access').value.trim();if(v===ACCESS_CODE){state.logged=true;clickSound('ok');renderBooks()}else{$('#loginError').textContent='Mã đăng nhập chưa đúng. Vui lòng thử lại.';clickSound('bad')}}
 
 function coverHTML(kind){
  const map={
@@ -1072,9 +1100,10 @@ async function beginRecording(){
  const status=$('#speakStatus');if(status)status.innerHTML='<span class="record-dot"></span>SPEAK NOW';
  recordedChunks=[];recordedUrl=null;window._finalTranscript='';window._interimTranscript='';window._uncertainWords=[];window._recordingActive=true;
  try{
+  if(micPermissionState!=='granted')throw new Error('Microphone permission was not granted at app entry');
   const stream=await navigator.mediaDevices.getUserMedia({audio:true});mediaStream=stream;mediaRecorder=new MediaRecorder(mediaStream);mediaRecorder.ondataavailable=e=>{if(e.data.size)recordedChunks.push(e.data)};mediaRecorder.start();
  }catch(e){if(status)status.textContent='🎤 Không mở được microphone. Hãy cấp quyền microphone rồi thử lại.'}
- const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ const SR=micPermissionState==='granted'?(window.SpeechRecognition||window.webkitSpeechRecognition):null;
  if(SR){try{
   recognition=new SR();recognition.lang='en-GB';recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=3;buildRecognitionGrammar(recognition,savedRun.qs[savedRun.i]);
   recognition.onresult=e=>{
@@ -1115,7 +1144,13 @@ function openWordPractice(word,ipa=''){
  closeModal();openModal(`<div class="word-practice-modal"><div class="mini-kicker">PRONUNCIATION RETRY</div><div class="big-word">${esc(word)}</div>${ipa?`<div class="ipa">${esc(ipa)}</div>`:''}<p>Nghe từ chuẩn, sau đó bấm microphone và nói lại đúng từ này.</p><div class="game-controls"><button onclick="speak('${jsq(word)}')">🔊 Nghe chuẩn</button><button class="accent" onclick="checkWordPronunciation('${jsq(word)}')">🎤 Nói lại</button></div><div id="wordPracticeFeedback"></div></div>`);setTimeout(()=>speak(word),250);
 }
 function checkWordPronunciation(word){
- const out=$('#wordPracticeFeedback'),SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){out.innerHTML='<div class="word-practice-feedback bad">Trình duyệt này không hỗ trợ nhận diện giọng nói.</div>';return}
+ const out=$('#wordPracticeFeedback');
+ if(micPermissionState!=='granted'){
+   out.innerHTML='<div class="word-practice-feedback bad">🎤 Microphone chưa được cấp quyền. Hãy bật quyền trong cài đặt trình duyệt rồi tải lại trang. Website không hỏi lại.</div>';
+   return;
+ }
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){out.innerHTML='<div class="word-practice-feedback bad">Trình duyệt này không hỗ trợ nhận diện giọng nói.</div>';return}
  try{wordPracticeRecognition?.abort()}catch(e){}
  try{
   wordPracticeRecognition=new SR();wordPracticeRecognition.lang='en-GB';wordPracticeRecognition.interimResults=false;wordPracticeRecognition.continuous=false;wordPracticeRecognition.maxAlternatives=3;
@@ -1246,8 +1281,8 @@ topbar=function(extra=''){
  const mic = micPermissionState==='granted'
    ? `<span id="micPill" class="mic-pill ok">🎤 Mic ready</span>`
    : micPermissionState==='denied'
-     ? `<button id="micPill" class="mic-pill warn" onclick="requestMicrophoneAccess(false)">🎤 Allow mic</button>`
-     : `<button id="micPill" class="mic-pill" onclick="requestMicrophoneAccess(false)">🎤 Microphone</button>`;
+     ? `<button id="micPill" class="mic-pill warn" onclick="henryMicHelp()">🎤 Allow mic</button>`
+     : `<button id="micPill" class="mic-pill" onclick="henryMicHelp()">🎤 Microphone</button>`;
  return `<header class="topbar"><button class="brand" onclick="${state.logged?'renderBooks()':'renderLogin()'}" style="border:0;background:none;padding:0"><span class="brand-mark"><i>✦</i></span><span>Henry English</span></button>
  <div class="nav-actions">${state.logged?`<button class="nav-btn hide-mobile" onclick="renderBooks()">📚 Books</button>`:''}${extra}${mic}<button class="nav-btn" onclick="toggleSound(this)">${soundOn?'🔊':'🔇'}</button></div></header>`;
 };
@@ -1413,7 +1448,15 @@ function hitFlyingLetter(letter,el){
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAll()});
 window.addEventListener('pagehide',()=>stopAll());
 let v4MicGestureDone=false;
-document.addEventListener('pointerdown',()=>{if(!v4MicGestureDone&&micPermissionState==='unknown'){v4MicGestureDone=true;requestMicrophoneAccess(true)}},{once:false,capture:true});
+// On the user's first interaction, request mic permission once for the whole website.
+// No permission requests when navigating to another lesson or starting another game.
+function henryFirstMicGesture(){
+ if(v4MicGestureDone)return;
+ v4MicGestureDone=true;
+ if(micPermissionState==='unknown')requestMicrophoneAccess(true);
+}
+document.addEventListener('pointerdown',henryFirstMicGesture,{once:true,capture:true});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){henryFirstMicGesture()}},{capture:true});
 
 
 // ===== V6 AUDIO + MOBILE ALPHABET RELIABILITY PATCH =====
@@ -1667,13 +1710,13 @@ function colorCoverHTML(){
  return `<div class="real-cover color-real-cover"><div class="color-real-inner"><div class="color-real-brand">Henry English</div><div class="color-real-title">Colors</div><div class="color-real-abc">ABC</div><div class="color-real-dots"><i style="--c:#ef2b2d"></i><i style="--c:#ffd92f"></i><i style="--c:#16db65"></i><i style="--c:#2457d6"></i><i style="--c:#7e3ff2"></i></div><div class="color-real-sub">37 colours & expressions</div></div></div>`;
 }
 function colorsCardHTML(b,i){
- return `<article class="v3-book-card color-book-card"><button class="v3-book-button" onclick="renderLessons(${i})">${colorCoverHTML()}<div class="v3-book-copy"><span class="course-tag">COLOR VOCABULARY</span><h3>${esc(b.name)}</h3><p>3 topics • 37 items • 4 learning games</p><div class="v3-open">Open Colors <b>→</b></div></div></button></article>`;
+ return `<article class="v3-book-card color-book-card"><button class="v3-book-button" onclick="renderLessons(${i})">${colorCoverHTML()}<div class="v3-book-copy"><span class="course-tag">COLOR VOCABULARY</span><h3>${esc(b.name)}</h3><p>3 topics • 37 items • 6 learning games</p><div class="v3-open">Open Colors <b>→</b></div></div></button></article>`;
 }
 function __renderColorTopics(bi){
  const b=BOOKS[bi];
  $('#app').innerHTML=`<div class="page lesson-page">${topbar()}<main class="shell">
  <div class="breadcrumbs"><button onclick="renderBooks()">Books</button><span>›</span><b>${esc(b.name)}</b></div>
- <section class="color-course-banner"><div class="color-banner-copy"><div class="mini-kicker">HENRY ENGLISH • COLORS</div><h1>Learn English <span>in Colour</span></h1><p>British IPA • nghĩa tiếng Việt • câu ví dụ • Flashcard • Trắc nghiệm • Nối từ • Listen & Find.</p><button class="secondary" onclick="renderBooks()">← Đổi sách</button></div>${colorCoverHTML()}</section>
+ <section class="color-course-banner"><div class="color-banner-copy"><div class="mini-kicker">HENRY ENGLISH • COLORS</div><h1>Learn English <span>in Colour</span></h1><p>British IPA • nghĩa tiếng Việt • câu ví dụ • Flashcard • Trắc nghiệm • Nối từ • Listen & Find • Nghe Việt – Nói Anh • Nghe Việt – Chọn Anh.</p><button class="secondary" onclick="renderBooks()">← Đổi sách</button></div>${colorCoverHTML()}</section>
  <div class="lesson-title-row"><div><h2>Choose a <span>Color Topic</span></h2><p>Chọn một nhóm màu để học và chơi game.</p></div><span class="topic-badge">🎨 37 items</span></div>
  <div class="color-topic-grid">${b.lessons.map((l,i)=>`<button class="color-topic-card" onclick="renderColorLearning(${bi},${i})"><div class="color-topic-no">0${l.number}</div><div class="color-topic-ribbon ${i===0?'basic':i===1?'common':'expressions'}"></div><div><small>TOPIC ${l.number}</small><h3>${esc(l.title)}</h3><p>${esc(l.subtitle)}</p></div><span>→</span></button>`).join('')}</div>
  </main></div>`;refreshMicUI();
@@ -1685,7 +1728,7 @@ function renderColorLearning(bi,li){
  <div class="learning-head color-learning-head"><div><div class="mini-kicker">COLORS VOCABULARY</div><h1>${esc(l.title)}</h1><p>${esc(l.subtitle)} • Chọn chính xác các màu/cụm màu muốn học.</p></div>
  <div class="toolbar"><input id="itemSearch" class="search" placeholder="Tìm màu..." oninput="filterItems()"><button onclick="selectVisible(true)">✓ Chọn tất cả</button><button onclick="selectVisible(false)">Bỏ chọn</button></div></div>
  <div id="itemGrid" class="item-grid color-item-grid">${items.map((it,i)=>{const sw=COLOR_SWATCHES[it.term]||'#d7dde8';return `<label class="item-card color-item-card" data-search="${esc((it.term+' '+it.meaning+' '+it.example).toLowerCase())}"><input class="learn-check" type="checkbox" value="${i}" checked onchange="updateSelectedCount()"><span class="color-swatch" style="background:${sw}"></span><div><div class="item-term">${esc(it.term)}</div>${it.ipa?`<div class="item-sub">${esc(it.ipa)} ${it.pos?'• '+esc(it.pos):''}</div>`:''}<div class="item-sub">${esc(it.meaning)}</div><div class="item-sub color-example"><i>${esc(it.example)}</i></div></div><button class="audio-btn" type="button" onclick="event.preventDefault();event.stopPropagation();speak('${jsq(it.term)}')">🔊</button></label>`}).join('')}</div>
- <div class="practice-bar"><div class="selected-count"><span id="selectedCount">${items.length}</span> selected</div><button onclick="startFlash()">🃏 Flashcard</button><button onclick="startMCQ()">❓ Trắc nghiệm</button><button onclick="startMatching()">🔗 Nối từ</button><button class="game" onclick="startFind()">🎧 Listen & Find</button></div>
+ <div class="practice-bar"><div class="selected-count"><span id="selectedCount">${items.length}</span> selected</div><button onclick="startFlash()">🃏 Flashcard</button><button onclick="startMCQ()">❓ Trắc nghiệm</button><button onclick="startMatching()">🔗 Nối từ</button><button class="game" onclick="startFind()">🎧 Listen & Find</button><button class="v8-game-entry" onclick="startVNSpeak()">🎙 Nghe Việt • Nói Anh</button><button class="v9-game-entry" onclick="startVNMCQ()">🇻🇳 Nghe Việt • Chọn Anh</button></div>
  </main></div>`;refreshMicUI();
 }
 const __v7RenderBooksBase=renderBooks;
@@ -1873,6 +1916,409 @@ __v74FlyStyle.textContent=`
 document.head.appendChild(__v74FlyStyle);
 // ===== END V7.4 ONE-TAP FLYING GAME PATCH =====
 
+// ===== V8 VOCABULARY: VIETNAMESE → ENGLISH SPEAKING + AUTOMATIC MCQ =====
+// Works with the selected vocabulary, collocations, chunks and Colors words.
+let __v8Token=0, __v8Recognizer=null, __v8SpeechEnd=null;
+const __v8Timers=new Set();
+function __v8Later(fn,delay){
+  const token=__v8Token;
+  const id=window.setTimeout(()=>{__v8Timers.delete(id);if(token===__v8Token)fn()},delay);
+  __v8Timers.add(id);return id;
+}
+function __v8CancelAudio(){
+  try{__v6SpeechSeq++}catch(e){}
+  try{speechSynthesis?.cancel()}catch(e){}
+  if(__v8SpeechEnd){const done=__v8SpeechEnd;__v8SpeechEnd=null;done(false)}
+}
+function __v8StopMic(){
+  const rec=__v8Recognizer;__v8Recognizer=null;
+  if(rec){rec.onend=null;rec.onresult=null;rec.onerror=null;try{rec.abort()}catch(e){}}
+}
+function __v8Cleanup(){
+  ++__v8Token;
+  for(const id of __v8Timers)window.clearTimeout(id);
+  __v8Timers.clear();
+  __v8StopMic();
+  __v8CancelAudio();
+}
+function __v8Voice(text,lang='en-GB',rate=.91){
+  if(!text||!soundOn||!('speechSynthesis' in window))return Promise.resolve(false);
+  __v8CancelAudio();
+  return new Promise(resolve=>{
+    let finished=false,watchdog=null;
+    const finish=(ok)=>{
+      if(finished)return;finished=true;
+      if(watchdog!==null){window.clearTimeout(watchdog);__v8Timers.delete(watchdog)}
+      if(__v8SpeechEnd===finish)__v8SpeechEnd=null;
+      resolve(ok);
+    };
+    __v8SpeechEnd=finish;
+    const u=new SpeechSynthesisUtterance(String(text));
+    u.lang=lang;u.rate=rate;u.pitch=1.02;
+    const voices=speechSynthesis.getVoices?.()||[];
+    if(lang==='vi-VN'){
+      const vi=voices.find(v=>(v.lang||'').toLowerCase().replace('_','-').startsWith('vi'));
+      if(vi)u.voice=vi;
+    }else{
+      const en=typeof __v6ChooseBritishFemaleVoice==='function'?__v6ChooseBritishFemaleVoice():null;
+      if(en)u.voice=en;
+    }
+    u.onend=()=>finish(true);u.onerror=()=>finish(false);
+    watchdog=window.setTimeout(()=>finish(false),Math.min(22000,Math.max(6000,String(text).length*155+4000)));
+    __v8Timers.add(watchdog);
+    try{speechSynthesis.speak(u)}catch(e){finish(false)}
+  });
+}
+function __v8Exit(){
+  __v8Cleanup();$('#modalOverlay')?.remove();
+  if(['vnspeak','mcq-auto','vn-mcq-auto'].includes(savedRun?.type))savedRun=null;
+  state.run=null;
+}
+const __v8OriginalCloseModal=closeModal;
+closeModal=function(){
+  if(['vnspeak','mcq-auto','vn-mcq-auto'].includes(savedRun?.type))__v8Exit();
+  else __v8OriginalCloseModal();
+};
+const __v8OriginalStopAll=stopAll;
+stopAll=function(...args){__v8Cleanup();return __v8OriginalStopAll(...args)};
+
+function __v8Normalize(s){
+  return String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/&/g,' and ').replace(/[‘’]/g,"'").replace(/\b(colour|color)\b/g,'color')
+    .replace(/\b(favourite|favorite)\b/g,'favorite').replace(/\b(centre|center)\b/g,'center')
+    .replace(/\b(theatre|theater)\b/g,'theater').replace(/\b(travelling|traveling)\b/g,'traveling')
+    .replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function __v8SameSpokenWord(heard,term){
+  const a=__v8Normalize(heard),b=__v8Normalize(term);
+  if(!a||!b)return false;
+  if(a===b)return true;
+  // Accept a natural short lead-in such as "it's ..." or "I think ..." for phrases.
+  const length=b.split(' ').length;
+  return length>1&&a.endsWith(' '+b)&&a.split(' ').length<=length+3;
+}
+function __v8ShowStatus(html,tone=''){
+  const el=$('#v8Status');if(!el)return;
+  el.className='v8-status'+(tone?' '+tone:'');el.innerHTML=html;
+}
+function __v8SpeakDisplayAnswer(r,correct){
+  if(savedRun!==r)return;
+  __v8Cleanup();
+  r.answered=true;
+  if(correct)r.correct.add(r.i);
+  const item=r.items[r.i];
+  const card=$('#v8Answer');if(card){
+    card.classList.remove('hidden');
+    card.innerHTML=`<div class="v8-result-word">${esc(item.term)}</div>${item.ipa?`<div class="v8-ipa">${esc(item.ipa)}</div>`:''}<div class="v8-meaning">${esc(item.meaning)}</div>`;
+  }
+  __v8ShowStatus(correct?'✅ Chính xác! +100 điểm':'📘 Đáp án của từ này',''+(correct?'good':'note'));
+  const ct=$('#v8Countdown');if(ct)ct.textContent=correct?'✓':'→';
+  __v8Later(async()=>{
+    const token=__v8Token;
+    await __v8Voice(item.term,'en-GB',.88);
+    if(token!==__v8Token||savedRun!==r)return;
+    __v8Later(()=>{if(savedRun===r){r.i++;__v8ShowVNWord()}},650);
+  },correct?400:600);
+}
+function __v8Listen(){
+  const r=savedRun;
+  if(!r||r.type!=='vnspeak'||r.answered)return;
+  __v8StopMic();
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){__v8ShowStatus('⚠️ Trình duyệt chưa hỗ trợ nhận diện giọng nói. Hãy thử Chrome hoặc Safari có hỗ trợ, hoặc chọn Hiện đáp án.','bad');return}
+  if(!r.micGranted){
+    __v8ShowStatus('🎤 Chưa có quyền microphone. Kiểm tra quyền microphone của trang web trong trình duyệt rồi thử lại.','bad');
+    return;
+  }
+  __v8ShowStatus('🎤 Đang nghe... Hãy đọc từ / cụm từ bằng tiếng Anh.','listening');
+  const rec=new SR();__v8Recognizer=rec;
+  const token=__v8Token;
+  let handled=false;
+  rec.lang='en-GB';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=4;
+  rec.onresult=e=>{
+    if(token!==__v8Token||__v8Recognizer!==rec||handled)return;
+    let partial='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const result=e.results[i];
+      const transcripts=Array.from(result).map(a=>(a.transcript||'').trim()).filter(Boolean);
+      if(result.isFinal){
+        handled=true;
+        const ok=transcripts.some(t=>__v8SameSpokenWord(t,r.items[r.i].term));
+        __v8StopMic();
+        if(ok){clickSound('ok');__v8SpeakDisplayAnswer(r,true)}
+        else{
+          clickSound('bad');
+          __v8ShowStatus('❌ Chưa đúng. Tôi nghe: <b>'+esc(transcripts[0]||'—')+'</b>. Hãy nói lại.','bad');
+          __v8Later(()=>__v8Listen(),1250);
+        }
+        return;
+      }
+      if(transcripts.length)partial=transcripts[0];
+    }
+    if(partial)__v8ShowStatus('🎤 Tôi đang nghe: <b>'+esc(partial)+'</b>','listening');
+  };
+  rec.onerror=e=>{
+    if(token!==__v8Token||__v8Recognizer!==rec||handled)return;
+    const code=e?.error||'';
+    if(code==='not-allowed'||code==='service-not-allowed'||code==='audio-capture'){
+      handled=true;r.micGranted=false;__v8StopMic();
+      __v8ShowStatus('⚠️ Microphone / nhận diện giọng nói bị chặn. Kiểm tra quyền mic trong cài đặt trình duyệt và dùng HTTPS.','bad');
+    } else if(code==='network'){
+      handled=true;__v8StopMic();
+      __v8ShowStatus('⚠️ Không kết nối được dịch vụ nhận diện giọng nói. Hãy kiểm tra mạng và bấm Nói lại.','bad');
+    }
+  };
+  rec.onend=()=>{
+    if(token!==__v8Token||__v8Recognizer!==rec||handled)return;
+    __v8Recognizer=null;
+    __v8ShowStatus('🎤 Chưa nghe rõ. Hãy thử nói lại.','bad');
+    __v8Later(()=>__v8Listen(),1100);
+  };
+  try{rec.start()}catch(e){__v8Recognizer=null;__v8ShowStatus('⚠️ Không mở được microphone. Bấm Nói lại để thử.','bad')}
+}
+function __v8CountdownAfterVietnamese(r){
+  if(savedRun!==r)return;
+  let left=3;
+  __v8ShowStatus('Chuẩn bị nói tiếng Anh...','ready');
+  const ct=$('#v8Countdown');if(ct)ct.textContent=String(left);
+  const tick=()=>{
+    if(savedRun!==r)return;
+    left--;
+    if(left>0){if(ct)ct.textContent=String(left);__v8Later(tick,1000)}
+    else{if(ct)ct.textContent='🎤';__v8Listen()}
+  };
+  __v8Later(tick,1000);
+}
+function __v8ShowVNWord(){
+  const r=savedRun;
+  if(!r||r.type!=='vnspeak')return;
+  __v8Cleanup();
+  if(r.i>=r.items.length){
+    const score=r.correct.size*100,total=r.items.length*100;
+    showCelebration(score,total,'Vietnamese → English Speaking!');return;
+  }
+  r.answered=false;
+  const it=r.items[r.i];
+  $('#modalOverlay')?.remove();
+  openModal(`<div class="v8-speak-game">
+    <div class="v8-game-top"><span class="v8-kicker">🎙 NGHE TIẾNG VIỆT – NÓI TIẾNG ANH</span><span class="v8-progress">${r.i+1} / ${r.items.length} · ⭐ ${r.correct.size*100}</span></div>
+    <h2 class="game-title v8-title">Listen & Speak</h2>
+    <div class="v8-prompt"><div class="v8-prompt-label">🔊 Nghĩa tiếng Việt</div>
+      <div class="v8-vietnamese">${esc(it.meaning)}</div>
+      <div id="v8Countdown" class="v8-countdown">🔊</div>
+      <div id="v8Status" class="v8-status">Đang đọc tiếng Việt...</div>
+    </div><div id="v8Answer" class="v8-answer hidden"></div>
+    <div class="v8-game-actions"><button onclick="__v8Exit()">← Danh sách từ</button>
+      <button onclick="__v8PrevVN()" ${r.i===0?'disabled':''}>← Từ trước</button>
+      <button onclick="__v8ReplayVN()">🔁 Nghe lại</button>
+      <button class="v8-mic-btn" onclick="__v8MicRetry()">🎤 Nói lại</button>
+      <button onclick="__v8SpeakDisplayAnswer(savedRun,false)">Hiện đáp án / Bỏ qua →</button></div>
+    <p class="v8-footnote">Sau 3 giây hệ thống sẽ bật micro. Đúng: hiện từ, phát âm tiếng Anh và tự chuyển từ tiếp theo.</p>
+  </div>`);
+  if(!soundOn)__v8ShowStatus('🔇 Đang tắt âm thanh. Hãy bật 🔊 trên thanh menu để nghe tiếng Việt.','bad');
+  __v8Later(async()=>{
+    const token=__v8Token;
+    await __v8Voice(it.meaning,'vi-VN',.93);
+    if(token===__v8Token&&savedRun===r)__v8CountdownAfterVietnamese(r);
+  },280);
+}
+function __v8ReplayVN(){
+  const r=savedRun;if(!r||r.type!=='vnspeak')return;
+  __v8ShowVNWord();
+}
+function __v8PrevVN(){
+  const r=savedRun;if(!r||r.type!=='vnspeak')return;
+  if(r.i<=0){__v8Exit();return}
+  r.i--;r.correct.delete(r.i);__v8ShowVNWord();
+}
+async function __v8MicRetry(){
+  const r=savedRun;if(!r||r.type!=='vnspeak')return;
+  __v8Cleanup();
+  __v8ShowStatus('🎤 Đang bật microphone...','ready');
+  const currentIndex=r.i;
+  const ok=micPermissionState==='granted';
+  if(savedRun!==r||r.i!==currentIndex)return;
+  r.micGranted=ok;
+  if(ok){r.answered=false;__v8Listen()}
+  else __v8ShowStatus('⚠️ Mic chưa được cấp. Hãy bật quyền microphone trong cài đặt trình duyệt rồi tải lại trang. Website không hỏi lại.','bad');
+}
+function startVNSpeak(){
+  const a=ensureSelected();if(!a)return;
+  const items=shuffle(a.filter(x=>String(x.meaning||'').trim()));
+  if(!items.length){alert('Các mục đã chọn chưa có nghĩa tiếng Việt để phát âm.');return}
+  __v8Cleanup();
+  const r={type:'vnspeak',items,i:0,correct:new Set(),micGranted:false,answered:false};
+  savedRun=r;state.run=r;
+  // Reuse the site-wide permission, without requesting it in the game again.
+  const ok=micPermissionState==='granted';
+  r.micGranted=ok;__v8ShowVNWord();
+  if(!ok)__v8ShowStatus('⚠️ Mic chưa sẵn sàng. Cấp quyền trong cài đặt trình duyệt rồi tải lại trang.','bad');
+}
+
+// Replace the existing quiz while preserving the selected vocabulary bank.
+startMCQ=function(){
+  const a=ensureSelected(2);if(!a)return;
+  __v8Cleanup();
+  const r={type:'mcq-auto',items:shuffle([...a]),i:0,score:0,answers:[],locked:false,options:[]};
+  savedRun=r;state.run=r;renderMCQ();
+};
+renderMCQ=function(){
+  const r=savedRun;if(!r||r.type!=='mcq-auto')return;
+  __v8Cleanup();
+  if(r.i>=r.items.length){showCelebration(r.score,r.items.length*100,'Great Listening!');return}
+  r.locked=false;
+  const target=r.items[r.i];
+  const alternatives=shuffle([...new Map(r.items.filter(x=>x.term!==target.term).map(x=>[x.term,x])).values()]).slice(0,3);
+  r.options=shuffle([target,...alternatives]);
+  $('#modalOverlay')?.remove();
+  openModal(`<div class="v8-mcq-game"><div class="v8-game-top"><span class="v8-kicker">❓ TRẮC NGHIỆM NGHE</span><span class="v8-progress">${r.i+1} / ${r.items.length} · ⭐ ${r.score}</span></div>
+    <h2 class="game-title v8-title">Listen & Choose</h2>
+    <div class="mcq-question v8-mcq-question"><div style="font-size:42px">🔊</div><b>Nghe tiếng Anh và chọn đáp án đúng</b><div style="margin-top:12px"><button class="secondary" onclick="__v8ReplayQuiz()">🔊 Nghe lại câu hỏi</button></div></div>
+    <div class="mcq-options v8-quiz-options">${r.options.map((o,k)=>`<button class="mcq-option" onclick="answerMCQ(this,${k})">${esc(o.term)}</button>`).join('')}</div>
+    <div id="v8QuizFeedback" class="v8-quiz-feedback" aria-live="polite">Chọn đáp án để xem đúng / sai.</div>
+    <div class="v8-game-actions"><button onclick="__v8Exit()">← Danh sách từ</button><button onclick="__v8PrevQuiz()" ${r.i===0?'disabled':''}>← Câu trước</button><button onclick="__v8SkipQuiz()">Bỏ qua →</button></div>
+    <p class="v8-footnote">Sau khi chọn: màu xanh/đỏ → hiển thị từ đúng → hệ thống đọc tiếng Anh → tự chuyển câu mới.</p></div>`);
+  __v8Later(()=>__v8Voice(target.term,'en-GB',.9),270);
+};
+function __v8ReplayQuiz(){
+  const r=savedRun;if(r?.type==='mcq-auto'&&!r.locked)__v8Voice(r.items[r.i].term,'en-GB',.9);
+}
+answerMCQ=function(button,optionIndex){
+  const r=savedRun;if(!r||r.type!=='mcq-auto'||r.locked)return;
+  const chosen=r.options[optionIndex];if(!chosen)return;
+  r.locked=true;__v8Cleanup();
+  const target=r.items[r.i],good=chosen.term===target.term;
+  if(good){r.score+=100;clickSound('ok')}else clickSound('bad');
+  r.answers[r.i]=good;
+  $$('.v8-quiz-options .mcq-option').forEach((el,k)=>{
+    el.disabled=true;
+    if(r.options[k].term===target.term)el.classList.add('correct');
+    if(k===optionIndex&&!good)el.classList.add('wrong');
+  });
+  const feedback=$('#v8QuizFeedback');
+  if(feedback){
+    feedback.className='v8-quiz-feedback '+(good?'good':'bad');
+    feedback.innerHTML=`${good?'✅ Đúng rồi! +100 điểm':'❌ Chưa đúng!'}<br><strong>Đáp án: ${esc(target.term)}</strong>${target.ipa?` <span>${esc(target.ipa)}</span>`:''}<div class="v8-correct-meaning">${esc(target.meaning||'')}</div>`;
+  }
+  const label=$('.v8-progress');if(label)label.textContent=`${r.i+1} / ${r.items.length} · ⭐ ${r.score}`;
+  __v8Later(async()=>{
+    const token=__v8Token;
+    await __v8Voice(target.term,'en-GB',.87);
+    if(token!==__v8Token||savedRun!==r)return;
+    __v8Later(()=>{if(savedRun===r){r.i++;renderMCQ()}},650);
+  },550);
+};
+function __v8PrevQuiz(){
+  const r=savedRun;if(!r||r.type!=='mcq-auto')return;
+  if(r.i===0){__v8Exit();return}
+  r.i--;
+  if(r.answers[r.i]===true)r.score=Math.max(0,r.score-100);
+  delete r.answers[r.i];renderMCQ();
+}
+function __v8SkipQuiz(){
+  const r=savedRun;if(!r||r.type!=='mcq-auto'||r.locked)return;
+  r.locked=true;__v8Cleanup();
+  const target=r.items[r.i];
+  $$('.v8-quiz-options .mcq-option').forEach((el,k)=>{el.disabled=true;if(r.options[k].term===target.term)el.classList.add('correct')});
+  const feedback=$('#v8QuizFeedback');if(feedback){feedback.className='v8-quiz-feedback';feedback.innerHTML=`Đáp án: <b>${esc(target.term)}</b> • ${esc(target.meaning||'')}`}
+  __v8Later(async()=>{
+    const token=__v8Token;await __v8Voice(target.term,'en-GB',.9);
+    if(token!==__v8Token||savedRun!==r)return;
+    __v8Later(()=>{if(savedRun===r){r.i++;renderMCQ()}},600);
+  },450);
+}
+
+// ===== V9: QUIZ VIETNAMESE AUDIO/MEANING → ENGLISH OPTIONS =====
+function startVNMCQ(){
+ const picked=ensureSelected(2);if(!picked)return;
+ // Multiple copies of the same term or translation cannot become ambiguous distractors.
+ const terms=new Set(),items=[];
+ for(const it of picked){
+   const term=String(it.term||'').trim(), meaning=String(it.meaning||'').trim();
+   const key=__v8Normalize(term);
+   if(!term||!meaning||!key||terms.has(key))continue;
+   terms.add(key);items.push(it);
+ }
+ if(items.length<2){alert('Cần chọn ít nhất 2 từ tiếng Anh khác nhau và có nghĩa tiếng Việt để chơi.');return}
+ const safe=items.filter(target=>items.some(x=>__v8Normalize(x.term)!==__v8Normalize(target.term) && __v9NormMeaning(x.meaning)!==__v9NormMeaning(target.meaning)));
+ if(safe.length<1){alert('Các từ đã chọn đều có cùng nghĩa tiếng Việt. Hãy chọn thêm từ có nghĩa khác để chơi.');return}
+ __v8Cleanup();
+ const r={type:'vn-mcq-auto',items:shuffle(safe),pool:items,i:0,score:0,answers:[],locked:false,options:[]};
+ savedRun=r;state.run=r;__v9RenderVNMCQ();
+}
+function __v9NormMeaning(s){return String(s||'').toLowerCase().normalize('NFC').replace(/[.,;:!?'"()]/g,' ').replace(/\s+/g,' ').trim()}
+function __v9VNMCQOptions(r,target){
+ const t=__v8Normalize(target.term),m=__v9NormMeaning(target.meaning);
+ const unique=new Map();
+ for(const it of shuffle(r.pool)){
+   const key=__v8Normalize(it.term);
+   if(key&&key!==t&&__v9NormMeaning(it.meaning)!==m&&!unique.has(key))unique.set(key,it);
+ }
+ return shuffle([target,...[...unique.values()].slice(0,3)]);
+}
+function __v9RenderVNMCQ(){
+ const r=savedRun;if(!r||r.type!=='vn-mcq-auto')return;
+ __v8Cleanup();
+ if(r.i>=r.items.length){showCelebration(r.score,r.items.length*100,'Vietnamese → English Quiz!');return}
+ r.locked=false;
+ const target=r.items[r.i];r.options=__v9VNMCQOptions(r,target);
+ $('#modalOverlay')?.remove();
+ openModal(`<div class="v8-mcq-game v9-vn-mcq">
+   <div class="v8-game-top"><span class="v8-kicker">🇻🇳 TRẮC NGHIỆM NGHE VIỆT – CHỌN ANH</span><span class="v8-progress">${r.i+1} / ${r.items.length} · ⭐ ${r.score}</span></div>
+   <h2 class="game-title v8-title">Nghe Việt – Chọn Anh</h2>
+   <div class="mcq-question v8-mcq-question v9-vn-question">
+     <div class="v8-prompt-label">🔊 Nghe nghĩa tiếng Việt</div>
+     <div class="v9-vn-text" lang="vi">${esc(target.meaning)}</div>
+     <button class="secondary" onclick="__v9ReplayVNMCQ()">🔊 Nghe lại tiếng Việt</button>
+   </div>
+   <div class="mcq-options v8-quiz-options">${r.options.map((o,k)=>`<button class="mcq-option" onclick="__v9AnswerVNMCQ(${k})">${esc(o.term)}</button>`).join('')}</div>
+   <div id="v8QuizFeedback" class="v8-quiz-feedback" aria-live="polite">Chọn từ / cụm từ tiếng Anh phù hợp với nghĩa trên.</div>
+   <div class="v8-game-actions"><button onclick="__v8Exit()">← Danh sách từ</button><button onclick="__v9PrevVNMCQ()" ${r.i===0?'disabled':''}>← Câu trước</button><button onclick="__v9SkipVNMCQ()">Bỏ qua →</button></div>
+   <p class="v8-footnote">Nghe tiếng Việt → chọn tiếng Anh → hiện đúng/sai xanh/đỏ → phát âm đáp án → tự sang câu tiếp theo.</p>
+ </div>`);
+ __v8Later(()=>__v8Voice(target.meaning,'vi-VN',.91),300);
+}
+function __v9ReplayVNMCQ(){
+ const r=savedRun;if(r?.type==='vn-mcq-auto'&&!r.locked)__v8Voice(r.items[r.i].meaning,'vi-VN',.91);
+}
+function __v9FinishVNMCQ(choiceIndex=null,skip=false){
+ const r=savedRun;if(!r||r.type!=='vn-mcq-auto'||r.locked)return;
+ const target=r.items[r.i],choice=r.options[choiceIndex];
+ if(!skip&&!choice)return;
+ r.locked=true;__v8Cleanup();
+ const good=!skip&&__v8Normalize(choice.term)===__v8Normalize(target.term);
+ if(!skip){r.answers[r.i]=good;if(good){r.score+=100;clickSound('ok')}else clickSound('bad')}
+ else r.answers[r.i]=false;
+ $$('.v8-quiz-options .mcq-option').forEach((el,k)=>{
+   el.disabled=true;
+   if(__v8Normalize(r.options[k].term)===__v8Normalize(target.term))el.classList.add('correct');
+   if(!skip&&k===choiceIndex&&!good)el.classList.add('wrong');
+ });
+ const feedback=$('#v8QuizFeedback');
+ if(feedback){
+   feedback.className='v8-quiz-feedback '+(skip?'':good?'good':'bad');
+   feedback.innerHTML=`${skip?'📘 Đáp án':good?'✅ Chính xác! +100 điểm':'❌ Chưa đúng!'}<br><strong>${esc(target.term)}</strong>${target.ipa?` <span>${esc(target.ipa)}</span>`:''}<div class="v8-correct-meaning">${esc(target.meaning)}</div>`;
+ }
+ const label=$('.v8-progress');if(label)label.textContent=`${r.i+1} / ${r.items.length} · ⭐ ${r.score}`;
+ __v8Later(async()=>{
+   const token=__v8Token;await __v8Voice(target.term,'en-GB',.88);
+   if(token!==__v8Token||savedRun!==r)return;
+   __v8Later(()=>{if(savedRun===r){r.i++;__v9RenderVNMCQ()}},700);
+ },550);
+}
+function __v9AnswerVNMCQ(index){__v9FinishVNMCQ(index,false)}
+function __v9SkipVNMCQ(){__v9FinishVNMCQ(null,true)}
+function __v9PrevVNMCQ(){
+ const r=savedRun;if(!r||r.type!=='vn-mcq-auto')return;
+ if(r.i<=0){__v8Exit();return}
+ r.i--;
+ if(r.answers[r.i]===true)r.score=Math.max(0,r.score-100);
+ delete r.answers[r.i];__v9RenderVNMCQ();
+}
+// ===== END V9 =====
+
+// ===== END V8 VOCABULARY GAME PATCH =====
+
 renderLogin();
 </script>
 <style>
@@ -1899,6 +2345,51 @@ renderLogin();
  .color-book-card .real-cover.color-real-cover{width:94px!important}
  .color-real-title{font-size:21px}.color-real-abc{font-size:28px}.color-real-sub{font-size:6px}
 }
+/* V8: vocabulary listening and speaking games */
+.practice-bar button.v8-game-entry{background:#19a36b;color:#fff}
+.practice-bar button.v9-game-entry{background:#2457d6;color:#fff}
+.v9-vn-question{display:flex;align-items:center;justify-content:center;gap:12px;flex-direction:column;min-height:180px;background:linear-gradient(125deg,#eef5ff,#fff9f1)}
+.v9-vn-text{font-size:clamp(23px,3.2vw,38px);color:var(--navy);font-weight:950;line-height:1.3;overflow-wrap:anywhere;text-align:center}
+.v8-game-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:2px 48px 6px 2px}
+.v8-kicker{font-size:12px;color:var(--blue);font-weight:950;letter-spacing:.8px}
+.v8-progress{font-weight:900;color:var(--navy);background:#edf4ff;padding:8px 11px;border-radius:99px}
+.v8-title{font-size:clamp(29px,4vw,43px);margin:12px 0 14px}
+.v8-prompt{padding:clamp(16px,2.8vw,25px);border-radius:25px;background:linear-gradient(130deg,#ebf3ff,#fff9ee);text-align:center;min-height:310px;display:flex;align-items:center;flex-direction:column;justify-content:center}
+.v8-prompt-label{font-size:13px;color:var(--blue);font-weight:950;letter-spacing:1px;text-transform:uppercase}
+.v8-vietnamese{font-size:clamp(24px,3.3vw,38px);font-weight:900;color:var(--navy);line-height:1.27;margin:15px 0;overflow-wrap:anywhere}
+.v8-countdown{width:87px;height:87px;border-radius:50%;display:grid;place-items:center;background:var(--orange);color:white;font-size:39px;font-weight:950;box-shadow:0 11px 25px rgba(240,90,0,.22);margin:6px 0 13px}
+.v8-status{border-radius:14px;padding:10px 14px;min-height:40px;color:#324a74;font-size:15px;font-weight:850;background:#ffffffbd;text-align:center;line-height:1.45;max-width:100%}
+.v8-status.good,.v8-quiz-feedback.good{background:#e2ffee;color:#087443}
+.v8-status.bad,.v8-quiz-feedback.bad{background:#fff0ef;color:#bd3025}
+.v8-status.listening{background:#e7f4ff;color:#1d53ac}
+.v8-status.ready{background:#fff4e8;color:#a84600}
+.v8-status.note{background:#fff7e3;color:#90620a}
+.v8-answer{margin-top:14px;border:2px solid #b2efd0;background:#f1fff6;border-radius:20px;text-align:center;padding:15px}
+.v8-result-word{font-weight:1000;color:var(--navy);font-size:clamp(31px,5vw,50px)}
+.v8-ipa{font-size:19px;color:#6943b3;margin-top:4px}
+.v8-meaning{color:#55706b;font-size:17px;margin-top:5px}
+.v8-game-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+.v8-game-actions button{border:1px solid #dfe7f6;border-radius:13px;padding:11px 15px;color:var(--navy);font-weight:900;background:#edf4ff;min-height:46px}
+.v8-game-actions button.v8-mic-btn{background:var(--orange);color:#fff;border-color:var(--orange)}
+.v8-game-actions button:disabled{opacity:.4;cursor:default}
+.v8-footnote{text-align:center;color:#7a879c;font-size:12px;line-height:1.5;margin:12px auto 0;max-width:650px}
+.v8-mcq-question{margin:5px 0 13px;padding:15px;min-height:130px}
+.v8-quiz-options .mcq-option{min-height:68px;font-size:clamp(15px,1.5vw,20px)}
+.v8-quiz-options .mcq-option:disabled{cursor:default;opacity:1}
+.v8-quiz-feedback{background:#f3f6fa;margin-top:13px;border-radius:15px;min-height:54px;text-align:center;padding:12px;font-weight:850;color:var(--navy);line-height:1.5}
+.v8-quiz-feedback strong{font-size:clamp(20px,2.5vw,27px)}
+.v8-quiz-feedback span{font-weight:700;color:#7959bd}
+.v8-correct-meaning{font-size:14px;font-weight:700;opacity:.85}
+@media(max-width:720px){
+  .v8-game-top{margin-right:40px}.v8-kicker{font-size:10px}.v8-progress{font-size:12px}
+  .v8-prompt{min-height:260px}.v8-countdown{width:73px;height:73px;font-size:33px}
+  .v8-status{font-size:13px}.v8-game-actions button{flex:1 1 46%;font-size:12px;padding:10px 6px}
+  .v8-game-actions button:first-child{flex:1 1 100%}
+  .v8-quiz-options{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .v8-quiz-options .mcq-option{min-height:74px;padding:12px 7px;font-size:14px;overflow-wrap:anywhere}
+}
+@media(max-width:380px){.v8-quiz-options{grid-template-columns:1fr!important}}
+
 </style>
 </body>
 </html>
