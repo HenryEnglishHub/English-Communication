@@ -2391,5 +2391,636 @@ renderLogin();
 @media(max-width:380px){.v8-quiz-options{grid-template-columns:1fr!important}}
 
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900;1000&family=Nunito+Sans:wght@400;500;600;700;800;900;1000&display=swap" rel="stylesheet">
+<style>
+/* V10 - Typography matching the Henry IELTS Speaking friendly typography */
+html,body,button,input,select,textarea,option,.item-term,.item-sub,.mcq-option,.flashback,.v8-vietnamese,.v9-vn-text{
+ font-family:'Nunito Sans','Be Vietnam Pro',ui-sans-serif,system-ui,sans-serif!important;
+}
+h1,h2,h3,h4,h5,h6,.brand,.hero h1,.page-head h1,.book-cover strong,.cover-main,
+.book-hero h1,.course-banner h1,.lesson-title-row h2,.speaking-hero h1,.question-box h2,
+.alpha-hero h1,.game-title,.flashcard .big,.final-score,.book-card h3,.v3-book-copy h3,
+.color-real-title,.color-cover-title,.tc-cover-title,.tc-hero h1{
+ font-family:'Nunito','Nunito Sans',ui-sans-serif,system-ui,sans-serif!important;
+}
+/* New reference book cover, in the same 4:5 geometry as existing books */
+.tc-book-cover{background:linear-gradient(145deg,#0B1F4D,#2457D6 55%,#2978ca)!important}
+.tc-cover-inner{height:100%;width:100%;padding:11%;position:relative;display:flex;flex-direction:column;color:#fff;overflow:hidden}
+.tc-cover-inner:before{content:'';position:absolute;width:95%;aspect-ratio:1;right:-40%;bottom:-23%;border-radius:50%;border:24px solid #ffffff24;transform:rotate(-22deg)}
+.tc-cover-top{font-weight:950;font-size:clamp(10px,.85vw,15px);letter-spacing:.1em;z-index:1}
+.tc-cover-title{font-size:clamp(25px,2.5vw,47px);font-weight:1000;line-height:1.05;letter-spacing:-.03em;margin-top:20%;z-index:1}
+.tc-cover-emojis{font-size:clamp(27px,3.1vw,50px);margin-top:auto;z-index:1;letter-spacing:.02em}
+.tc-cover-bottom{font-size:clamp(9px,.7vw,12px);letter-spacing:.1em;font-weight:950;margin-top:16px;z-index:1}
+/* Reference book + numbers share the same navy-and-orange design system */
+.tc-shell{max-width:1400px}
+.tc-hero{background:linear-gradient(128deg,#eaf3ff,#fff 57%,#fff0e5);border:1px solid #e5ebf6;box-shadow:0 14px 40px #0b1f4d12;border-radius:30px;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.tc-hero .mini-kicker{color:#2457D6}
+.tc-hero h1{font-weight:1000;line-height:1.07;font-size:clamp(32px,4.1vw,62px);margin:8px 0;color:var(--navy)}
+.tc-hero h1 span{color:var(--orange)}
+.tc-hero p{font-size:15px;color:#65748a;line-height:1.55;margin:4px 0;max-width:870px}
+.tc-hero-icon{display:grid;place-items:center;border-radius:27px;width:108px;height:108px;font-size:60px;background:white;box-shadow:0 10px 25px #0b1f4d16;flex:none}
+.tc-chapters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:23px 0}
+.tc-chapter{position:relative;min-height:175px;border:1px solid #e8eef8;background:#fff;border-radius:23px;padding:20px;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:9px;box-shadow:0 9px 26px #0b1f4d0d;transition:transform .15s,box-shadow .15s}
+.tc-chapter:hover{transform:translateY(-3px);box-shadow:0 14px 28px #0b1f4d17}
+.tc-chapter-ic{font-size:32px}.tc-chapter b{font-size:17px;color:var(--navy);line-height:1.2}.tc-chapter small{color:#79869b;font-size:13px}
+.tc-chapter-arrow{position:absolute;right:18px;bottom:17px;font-size:23px;color:var(--orange)}
+.tc-game-link{width:100%;display:flex;align-items:center;text-align:left;gap:20px;border:0;border-radius:24px;padding:20px 25px;color:white;background:linear-gradient(115deg,#0b1f4d,#2457d6);font-size:35px;box-shadow:0 16px 35px #0b1f4d30}
+.tc-game-link>span{display:flex;flex:1;flex-direction:column;gap:5px}.tc-game-link b{font-size:22px}.tc-game-link small{font-size:14px;color:#e1eaff}
+.tc-chapter-actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 8px}.tc-chapter-actions .primary{min-height:46px;font-size:14px}
+.tc-table-section{border:1px solid #e5ecf7;border-radius:25px;background:#fff;margin:20px 0;padding:23px;box-shadow:0 11px 29px #0b1f4d09}
+.tc-table-section h2{margin:0 0 16px;color:var(--navy);font-size:clamp(22px,2.5vw,31px);font-weight:1000}
+.tc-table-section h2 small{color:#8996aa;font-size:15px}
+.tc-table-wrap{max-width:100%;overflow-x:auto;border-radius:17px;border:1px solid #e5ecf7}
+.tc-table{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+.tc-table th{text-align:left;color:#0b1f4d;background:#edf4ff;padding:13px 15px;font-weight:1000;white-space:nowrap}
+.tc-table td{padding:12px 15px;border-top:1px solid #eaf0f8;color:#34435b;vertical-align:middle}
+.tc-table tr:nth-child(even) td{background:#fafcff}
+.tc-table tr:hover td{background:#fff9ef}
+.tc-table .tc-term{font-weight:900;color:var(--navy);font-size:15px}
+.tc-table .tc-ipa{color:#7652b5;font-weight:750;white-space:nowrap}
+.tc-audio{width:38px;height:38px;background:#eaf2ff;border:0;color:#2457d6;border-radius:11px;display:grid;place-items:center;font-size:18px;flex:none}
+.tc-audio:active,.tc-number-card:active{transform:scale(.97)}
+.tc-examples{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tc-example{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f8fbff;border:1px solid #e5ebf7;border-radius:17px;padding:15px}
+.tc-example b{font-size:15px;color:var(--navy)}.tc-example p{margin:5px 0 0;color:#728095;font-size:13px}
+.tc-notes{border:1px solid #ffe2ca;background:#fff9f3;padding:20px 23px;border-radius:23px;margin:17px 0;color:#53443a}
+.tc-notes h3{margin:0 0 10px;color:#bb5204}.tc-notes p{margin:8px 0;line-height:1.58;font-size:14px}
+.tc-footnav{display:flex;justify-content:space-between;gap:10px;margin:20px 0 45px}.tc-footnav .primary{min-height:46px;font-size:14px}
+.tc-game-settings{background:#fff;border:1px solid #e4edf8;border-radius:23px;padding:21px;margin-top:18px}
+.tc-game-settings h2{font-size:21px;color:var(--navy);margin:0 0 14px}
+.tc-group-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tc-group-options label{display:flex;align-items:center;gap:10px;padding:14px;background:#f6f9ff;border:1px solid #e3ecfb;border-radius:15px;cursor:pointer}
+.tc-group-options input,.tc-select-item input{accent-color:#2457d6;width:20px;height:20px;flex-shrink:0}
+.tc-group-options span{font-weight:900;color:#0b1f4d;flex:1}.tc-group-options b{font-size:12px;color:#657794}
+.tc-selected-summary{color:#61718b;font-size:14px;margin:15px 2px 0}
+.tc-selected-items{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:14px 0 25px}
+.tc-select-item{display:flex;gap:8px;align-items:start;border:1px solid #e5edf8;border-radius:14px;background:#fff;padding:12px;min-width:0;cursor:pointer}
+.tc-select-item span{color:var(--navy);font-weight:900;min-width:0}.tc-select-item small{display:block;font-weight:650;color:#7382a1;font-size:12px;margin-top:4px}
+.tc-game-bar{margin-bottom:25px}
+.tc-number-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}
+.tc-number-card{position:relative;min-height:105px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;border-radius:15px;border:1px solid #dfebfa;background:linear-gradient(155deg,#fff,#f5f9ff);padding:8px;overflow-wrap:anywhere}
+.tc-number-card strong{font-size:31px;font-weight:1000;color:#f05a00;line-height:1}
+.tc-number-card b{font-size:12px;color:#0b1f4d;line-height:1.1}
+.tc-number-card small{font-size:10px;color:#7355a4;font-weight:700}
+.tc-number-card span{font-size:14px;position:absolute;top:6px;right:6px}
+.tc-subtitle{color:#728198;font-size:14px;margin:-7px 0 15px}
+.tc-number-stage{background:linear-gradient(140deg,#fff,#edf5ff 58%,#fff8ed);border-radius:28px;border:1px solid #deeaf7;padding:25px;max-width:910px;margin:20px auto;text-align:center;box-shadow:0 20px 45px #0b1f4d13}
+.tc-number-stage h1{color:#0b1f4d;font-size:clamp(26px,3.3vw,38px);margin:6px auto}.tc-number-stage p{color:#64748b;margin:7px auto}
+.tc-range{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin:14px 0}
+.tc-range button{border:1px solid #d8e5fa;background:#fff;color:#2457d6;font-weight:900;border-radius:999px;padding:9px 16px}
+.tc-range button.active{background:#2457d6;color:#fff}
+.tc-number-prompt{font-size:clamp(92px,18vw,170px);font-weight:1000;line-height:1.2;color:#f05a00;margin:15px auto}
+.tc-listen-btn{background:#0b1f4d;color:#fff;border:0;padding:12px 21px;font-weight:900;border-radius:15px}
+.tc-answer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:640px;margin:21px auto}
+.tc-answer{min-height:90px;font-weight:1000;font-size:34px;color:var(--navy);background:#fff;border:2px solid #dce6f5;border-radius:18px}
+.tc-answer.correct{background:#d8ffea!important;border-color:#20be6f!important;color:#078240!important}
+.tc-answer.wrong{background:#ffe6e4!important;border-color:#e45650!important;color:#bd271f!important}
+.tc-game-feedback{font-size:15px;font-weight:850;min-height:43px;color:#435b83}.tc-game-feedback b{display:block;color:#0b1f4d}.tc-game-feedback small{display:block;color:#775ab5}
+.tc-num-word{font-size:35px!important;color:#0b1f4d!important;margin:10px 0}.tc-num-ipa{font-size:20px;color:#7455b2;font-weight:800}
+.tc-stage-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}.tc-stage-actions .primary{min-height:44px;font-size:14px}
+@media(max-width:1200px){.tc-chapters{grid-template-columns:repeat(2,minmax(0,1fr))}.tc-selected-items{grid-template-columns:repeat(3,minmax(0,1fr))}.tc-number-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:720px){
+ .tc-shell{padding:18px 12px 90px}.tc-hero{padding:19px;border-radius:22px}.tc-hero h1{font-size:34px}.tc-hero p{font-size:13px}.tc-hero-icon{display:none}
+ .tc-chapters{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:13px}.tc-chapter{min-height:145px;padding:13px;border-radius:17px}.tc-chapter-ic{font-size:25px}.tc-chapter b{font-size:14px}.tc-chapter small{font-size:11px}
+ .tc-game-link{padding:16px;gap:12px;border-radius:18px}.tc-game-link b{font-size:18px}.tc-game-link small{font-size:12px}
+ .tc-table-section{padding:14px 11px;border-radius:19px;margin:12px 0}.tc-table-section h2{font-size:21px}
+ .tc-table{font-size:12px;min-width:520px}.tc-table th,.tc-table td{padding:10px 9px}.tc-table .tc-term{font-size:13px}
+ .tc-examples{grid-template-columns:1fr}.tc-group-options{grid-template-columns:1fr}.tc-selected-items{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .tc-select-item{padding:9px}.tc-select-item span{font-size:13px}.tc-select-item small{font-size:11px}
+ .tc-number-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.tc-number-card{min-height:94px;padding:7px}.tc-number-card strong{font-size:28px}.tc-number-card b{font-size:11px}.tc-number-card small{font-size:9px}
+ .tc-answer{min-height:83px}.tc-number-stage{padding:20px 13px}.tc-book .tc-cover-title{font-size:25px}.tc-cover-emojis{font-size:29px}
+}
+
+</style>
+<script>
+// ===== V10: TIME & CALENDAR REFERENCE BOOK + ALPHABET NUMBERS =====
+// Additive extension: leaves existing course datasets and games untouched.
+(function(){
+'use strict';
+const raw=(s)=>s.trim().split('\n').map(x=>x.trim()).filter(Boolean).map(x=>x.split('|').map(z=>z.trim()));
+const vocab=(s)=>raw(s).map(([term,ipa,meaning])=>({term,ipa,meaning}));
+const samples=(s)=>raw(s).map(([en,vi])=>({en,vi}));
+const CHAPTERS=[
+ {name:'Days of the Week',vn:'Các thứ trong tuần',icon:'📅',groups:[
+  {title:'Seven Days of the Week',items:vocab(`Monday (Mon.)|/ˈmʌn.deɪ/|Thứ Hai
+Tuesday (Tue.)|/ˈtuːz.deɪ/|Thứ Ba
+Wednesday (Wed.)|/ˈwenz.deɪ/|Thứ Tư
+Thursday (Thu.)|/ˈθɝːz.deɪ/|Thứ Năm
+Friday (Fri.)|/ˈfraɪ.deɪ/|Thứ Sáu
+Saturday (Sat.)|/ˈsæt̬.ɚ.deɪ/|Thứ Bảy
+Sunday (Sun.)|/ˈsʌn.deɪ/|Chủ Nhật`)},
+  {title:'Additional Vocabulary',items:vocab(`Day|/deɪ/|Ngày
+Week|/wiːk/|Tuần
+Weekday|/ˈwiːk.deɪ/|Ngày trong tuần (thường thứ Hai–Sáu)
+Weekend|/ˈwiːk.end/|Cuối tuần
+Today|/təˈdeɪ/|Hôm nay
+Yesterday|/ˈjes.tɚ.deɪ/|Hôm qua
+Tomorrow|/təˈmɑː.roʊ/|Ngày mai
+Tonight|/təˈnaɪt/|Tối nay
+The day before yesterday|/ðə deɪ bɪˈfɔːr ˈjes.tɚ.deɪ/|Hôm kia
+The day after tomorrow|/ðə deɪ ˈæf.tɚ təˈmɑː.roʊ/|Ngày kia
+This week|/ðɪs wiːk/|Tuần này
+Last week|/læst wiːk/|Tuần trước
+Next week|/nekst wiːk/|Tuần sau
+Every day|/ˈev.ri deɪ/|Mỗi ngày
+Every Monday|/ˈev.ri ˈmʌn.deɪ/|Mỗi thứ Hai
+Once a week|/wʌns ə wiːk/|Một lần mỗi tuần
+Twice a week|/twaɪs ə wiːk/|Hai lần mỗi tuần
+A week ago|/ə wiːk əˈɡoʊ/|Một tuần trước
+In a week|/ɪn ə wiːk/|Một tuần nữa`)}],
+  examples:samples(`What day is it today?|Hôm nay là thứ mấy?
+Today is Monday.|Hôm nay là thứ Hai.
+Yesterday was Sunday.|Hôm qua là Chủ Nhật.
+Tomorrow is Tuesday.|Ngày mai là thứ Ba.
+I work from Monday to Friday.|Tôi làm việc từ thứ Hai đến thứ Sáu.`),
+  notes:['Tên các thứ luôn viết hoa chữ cái đầu.','Dùng “on” với thứ cụ thể: on Monday, on Friday.','Dùng “every Monday” để nói việc lặp lại mỗi thứ Hai.']},
+ {name:'Months of the Year',vn:'Mười hai tháng trong năm',icon:'🗓️',groups:[
+  {title:'Twelve Months',items:vocab(`January (Jan.)|/ˈdʒæn.ju.er.i/|Tháng Một · 31 ngày
+February (Feb.)|/ˈfeb.ruː.er.i/|Tháng Hai · 28/29 ngày
+March (Mar.)|/mɑːrtʃ/|Tháng Ba · 31 ngày
+April (Apr.)|/ˈeɪ.prəl/|Tháng Tư · 30 ngày
+May|/meɪ/|Tháng Năm · 31 ngày
+June (Jun.)|/dʒuːn/|Tháng Sáu · 30 ngày
+July (Jul.)|/dʒuˈlaɪ/|Tháng Bảy · 31 ngày
+August (Aug.)|/ˈɑː.ɡəst/|Tháng Tám · 31 ngày
+September (Sep.)|/sepˈtem.bɚ/|Tháng Chín · 30 ngày
+October (Oct.)|/ɑːkˈtoʊ.bɚ/|Tháng Mười · 31 ngày
+November (Nov.)|/noʊˈvem.bɚ/|Tháng Mười Một · 30 ngày
+December (Dec.)|/dɪˈsem.bɚ/|Tháng Mười Hai · 31 ngày`)},
+  {title:'Additional Vocabulary',items:vocab(`Month|/mʌnθ/|Tháng
+Year|/jɪr/|Năm
+Calendar|/ˈkæl.ən.dɚ/|Lịch
+Date|/deɪt/|Ngày tháng
+This month|/ðɪs mʌnθ/|Tháng này
+Last month|/læst mʌnθ/|Tháng trước
+Next month|/nekst mʌnθ/|Tháng sau
+Every month|/ˈev.ri mʌnθ/|Mỗi tháng
+Monthly|/ˈmʌnθ.li/|Hằng tháng
+This year|/ðɪs jɪr/|Năm nay
+Last year|/læst jɪr/|Năm ngoái
+Next year|/nekst jɪr/|Năm sau
+Every year|/ˈev.ri jɪr/|Mỗi năm
+Yearly|/ˈjɪr.li/|Hằng năm
+Annual|/ˈæn.ju.əl/|Hằng năm, thường niên
+Leap year|/ˈliːp jɪr/|Năm nhuận
+A full year|/ə fʊl jɪr/|Một năm tròn
+Beginning of the month|/bɪˈɡɪn.ɪŋ əv ðə mʌnθ/|Đầu tháng
+Middle of the month|/ˈmɪd.əl əv ðə mʌnθ/|Giữa tháng
+End of the month|/end əv ðə mʌnθ/|Cuối tháng
+Early January|/ˈɝː.li ˈdʒæn.ju.er.i/|Đầu tháng Một
+Late December|/leɪt dɪˈsem.bɚ/|Cuối tháng Mười Hai`)}],
+  examples:samples(`What month is it now?|Bây giờ là tháng mấy?
+It's November.|Bây giờ là tháng Mười Một.
+My birthday is in August.|Sinh nhật tôi vào tháng Tám.
+February has 29 days in a leap year.|Tháng Hai có 29 ngày trong năm nhuận.`),
+  notes:['Tên tháng luôn viết hoa chữ cái đầu.','Dùng “in” trước tháng hoặc năm: in March, in 2026.','Dùng “on” khi có ngày cụ thể: on March 15th.']},
+ {name:'Seasons of the Year',vn:'Các mùa trong năm',icon:'🌸',groups:[
+  {title:'Four Seasons',items:vocab(`Spring|/sprɪŋ/|Mùa xuân
+Summer|/ˈsʌm.ɚ/|Mùa hè
+Autumn|/ˈɑː.t̬əm/|Mùa thu
+Fall|/fɔːl/|Mùa thu (từ phổ biến trong tiếng Anh Mỹ)
+Winter|/ˈwɪn.t̬ɚ/|Mùa đông`)},
+  {title:'Additional Vocabulary',items:vocab(`Season|/ˈsiː.zən/|Mùa
+Four seasons|/fɔːr ˈsiː.zənz/|Bốn mùa
+Rainy season|/ˈreɪ.ni ˈsiː.zən/|Mùa mưa
+Dry season|/draɪ ˈsiː.zən/|Mùa khô
+Wet season|/wet ˈsiː.zən/|Mùa mưa
+Early spring|/ˈɝː.li sprɪŋ/|Đầu mùa xuân
+Late spring|/leɪt sprɪŋ/|Cuối mùa xuân
+Early summer|/ˈɝː.li ˈsʌm.ɚ/|Đầu mùa hè
+Late summer|/leɪt ˈsʌm.ɚ/|Cuối mùa hè
+Early autumn|/ˈɝː.li ˈɑː.t̬əm/|Đầu mùa thu
+Late fall|/leɪt fɔːl/|Cuối mùa thu
+Early winter|/ˈɝː.li ˈwɪn.t̬ɚ/|Đầu mùa đông
+Late winter|/leɪt ˈwɪn.t̬ɚ/|Cuối mùa đông
+Seasonal|/ˈsiː.zən.əl/|Theo mùa
+Peak season|/piːk ˈsiː.zən/|Mùa cao điểm
+Low season|/loʊ ˈsiː.zən/|Mùa thấp điểm
+Off-season|/ˌɔːfˈsiː.zən/|Trái mùa, mùa vắng khách`)},
+  {title:'Weather Vocabulary',items:vocab(`Hot|/hɑːt/|Nóng
+Warm|/wɔːrm/|Ấm
+Cool|/kuːl/|Mát mẻ
+Cold|/koʊld/|Lạnh
+Freezing|/ˈfriː.zɪŋ/|Rét buốt
+Sunny|/ˈsʌn.i/|Có nắng
+Rainy|/ˈreɪ.ni/|Có mưa
+Windy|/ˈwɪn.di/|Có gió
+Cloudy|/ˈklaʊ.di/|Có mây
+Snowy|/ˈsnoʊ.i/|Có tuyết
+Humid|/ˈhjuː.mɪd/|Ẩm
+Dry|/draɪ/|Khô
+Weather|/ˈweð.ɚ/|Thời tiết
+Temperature|/ˈtem.prə.tʃɚ/|Nhiệt độ`)}],
+  examples:samples(`What is your favourite season?|Mùa yêu thích của bạn là mùa nào?
+My favourite season is spring.|Mùa yêu thích của tôi là mùa xuân.
+It's usually cold in winter.|Mùa đông thường lạnh.
+It rains a lot during the rainy season.|Trời mưa nhiều vào mùa mưa.`),
+  notes:['Mùa trong bảng khí tượng Bắc bán cầu: xuân (tháng 3–5), hạ (6–8), thu (9–11), đông (12–2).','Ở miền Nam Việt Nam thường có mùa mưa và mùa khô.','Dùng “in spring / in summer / in winter”.']},
+ {name:'Dates & Ordinal Numbers',vn:'Ngày tháng và số thứ tự',icon:'🔢',groups:[
+  {title:'Ordinal Numbers 1st–31st',items:vocab(`1st – first|/fɝːst/|Thứ nhất, ngày 1
+2nd – second|/ˈsek.ənd/|Thứ hai, ngày 2
+3rd – third|/θɝːd/|Thứ ba, ngày 3
+4th – fourth|/fɔːrθ/|Thứ tư, ngày 4
+5th – fifth|/fɪfθ/|Thứ năm, ngày 5
+6th – sixth|/sɪksθ/|Thứ sáu, ngày 6
+7th – seventh|/ˈsev.ənθ/|Thứ bảy, ngày 7
+8th – eighth|/eɪtθ/|Thứ tám, ngày 8
+9th – ninth|/naɪnθ/|Thứ chín, ngày 9
+10th – tenth|/tenθ/|Thứ mười, ngày 10
+11th – eleventh|/ɪˈlev.ənθ/|Thứ 11, ngày 11
+12th – twelfth|/twelfθ/|Thứ 12, ngày 12
+13th – thirteenth|/ˌθɝːˈtiːnθ/|Thứ 13, ngày 13
+14th – fourteenth|/ˌfɔːrˈtiːnθ/|Thứ 14, ngày 14
+15th – fifteenth|/ˌfɪfˈtiːnθ/|Thứ 15, ngày 15
+16th – sixteenth|/ˌsɪksˈtiːnθ/|Thứ 16, ngày 16
+17th – seventeenth|/ˌsev.ənˈtiːnθ/|Thứ 17, ngày 17
+18th – eighteenth|/ˌeɪˈtiːnθ/|Thứ 18, ngày 18
+19th – nineteenth|/ˌnaɪnˈtiːnθ/|Thứ 19, ngày 19
+20th – twentieth|/ˈtwen.ti.əθ/|Thứ 20, ngày 20
+21st – twenty-first|/ˌtwen.ti ˈfɝːst/|Thứ 21, ngày 21
+22nd – twenty-second|/ˌtwen.ti ˈsek.ənd/|Thứ 22, ngày 22
+23rd – twenty-third|/ˌtwen.ti ˈθɝːd/|Thứ 23, ngày 23
+24th – twenty-fourth|/ˌtwen.ti ˈfɔːrθ/|Thứ 24, ngày 24
+25th – twenty-fifth|/ˌtwen.ti ˈfɪfθ/|Thứ 25, ngày 25
+26th – twenty-sixth|/ˌtwen.ti ˈsɪksθ/|Thứ 26, ngày 26
+27th – twenty-seventh|/ˌtwen.ti ˈsev.ənθ/|Thứ 27, ngày 27
+28th – twenty-eighth|/ˌtwen.ti ˈeɪtθ/|Thứ 28, ngày 28
+29th – twenty-ninth|/ˌtwen.ti ˈnaɪnθ/|Thứ 29, ngày 29
+30th – thirtieth|/ˈθɝː.ti.əθ/|Thứ 30, ngày 30
+31st – thirty-first|/ˌθɝː.ti ˈfɝːst/|Thứ 31, ngày 31`)},
+  {title:'Date Vocabulary',items:vocab(`Date|/deɪt/|Ngày tháng
+Day|/deɪ/|Ngày
+Month|/mʌnθ/|Tháng
+Year|/jɪr/|Năm
+Birthday|/ˈbɝːθ.deɪ/|Sinh nhật
+Date of birth|/deɪt əv bɝːθ/|Ngày sinh
+Anniversary|/ˌæn.əˈvɝː.sɚ.i/|Ngày kỷ niệm
+Wedding anniversary|/ˈwed.ɪŋ ˌæn.əˈvɝː.sɚ.i/|Kỷ niệm ngày cưới
+Appointment|/əˈpɔɪnt.mənt/|Cuộc hẹn
+Deadline|/ˈded.laɪn/|Hạn chót
+Holiday|/ˈhɑː.lə.deɪ/|Ngày nghỉ, kỳ nghỉ, ngày lễ
+Public holiday|/ˈpʌb.lɪk ˈhɑː.lə.deɪ/|Ngày nghỉ lễ
+National holiday|/ˈnæʃ.ən.əl ˈhɑː.lə.deɪ/|Ngày lễ quốc gia
+Day off|/deɪ ɔːf/|Ngày nghỉ
+Working day|/ˈwɝː.kɪŋ deɪ/|Ngày làm việc
+Special occasion|/ˈspeʃ.əl əˈkeɪ.ʒən/|Dịp đặc biệt`)},
+  {title:'How to Read Years',items:vocab(`1990 – nineteen ninety|/ˌnaɪnˈtiːn ˈnaɪn.ti/|Năm 1990
+1999 – nineteen ninety-nine|/ˌnaɪnˈtiːn ˌnaɪn.ti ˈnaɪn/|Năm 1999
+2000 – two thousand|/tuː ˈθaʊ.zənd/|Năm 2000
+2005 – two thousand five|/tuː ˈθaʊ.zənd faɪv/|Năm 2005
+2010 – twenty ten|/ˈtwen.ti ten/|Năm 2010
+2020 – twenty twenty|/ˈtwen.ti ˈtwen.ti/|Năm 2020
+2026 – twenty twenty-six|/ˈtwen.ti ˌtwen.ti ˈsɪks/|Năm 2026
+2030 – twenty thirty|/ˈtwen.ti ˈθɝː.ti/|Năm 2030`)}],
+  examples:samples(`What's the date today?|Hôm nay là ngày bao nhiêu?
+It's November ninth.|Hôm nay là ngày 9 tháng 11.
+When is your birthday?|Sinh nhật bạn vào ngày nào?
+It's on August tenth.|Sinh nhật tôi vào ngày 10 tháng 8.`),
+  notes:['Mỹ: Month/Day/Year → November 9, 2026 hoặc 11/09/2026.','Anh: Day/Month/Year → 9 November 2026 hoặc 09/11/2026.','Trong cách nói ngày tháng, dùng số thứ tự: November ninth, the ninth of November.','Một số năm có nhiều cách đọc đúng: 2026 có thể là twenty twenty-six hoặc two thousand twenty-six.']},
+ {name:'Telling the Time',vn:'Cách nói giờ',icon:'🕒',groups:[
+  {title:'How to Tell the Time',items:vocab(`7:00 – seven o'clock|/ˈsev.ən əˈklɑːk/|Bảy giờ đúng
+7:05 – seven oh five|/ˈsev.ən oʊ faɪv/|Bảy giờ năm phút
+7:10 – seven ten|/ˈsev.ən ten/|Bảy giờ mười phút
+7:15 – seven fifteen|/ˈsev.ən fɪfˈtiːn/|Bảy giờ mười lăm phút
+7:15 – a quarter past seven|/ə ˈkwɔːr.t̬ɚ pæst ˈsev.ən/|Bảy giờ mười lăm phút
+7:20 – seven twenty|/ˈsev.ən ˈtwen.ti/|Bảy giờ hai mươi phút
+7:30 – seven thirty|/ˈsev.ən ˈθɝː.ti/|Bảy giờ ba mươi phút
+7:30 – half past seven|/hæf pæst ˈsev.ən/|Bảy giờ rưỡi
+7:40 – seven forty|/ˈsev.ən ˈfɔːr.ti/|Bảy giờ bốn mươi phút
+7:45 – seven forty-five|/ˈsev.ən ˌfɔːr.ti ˈfaɪv/|Bảy giờ bốn mươi lăm phút
+7:45 – a quarter to eight|/ə ˈkwɔːr.t̬ɚ tə eɪt/|Tám giờ kém mười lăm phút
+7:50 – seven fifty|/ˈsev.ən ˈfɪf.ti/|Bảy giờ năm mươi phút
+7:50 – ten to eight|/ten tə eɪt/|Tám giờ kém mười phút
+12:00 PM – noon|/nuːn/|12 giờ trưa
+12:00 AM – midnight|/ˈmɪd.naɪt/|12 giờ đêm`)},
+  {title:'Time Vocabulary',items:vocab(`Time|/taɪm/|Thời gian, giờ
+Clock|/klɑːk/|Đồng hồ treo tường hoặc để bàn
+Watch|/wɑːtʃ/|Đồng hồ đeo tay
+Hour|/aʊɚ/|Giờ (đơn vị thời gian)
+Minute|/ˈmɪn.ɪt/|Phút
+Second|/ˈsek.ənd/|Giây
+O'clock|/əˈklɑːk/|Giờ đúng
+A quarter|/ə ˈkwɔːr.t̬ɚ/|Một phần tư
+Half|/hæf/|Một nửa
+Past|/pæst/|Qua
+To|/tuː/|Kém, còn đến
+Noon|/nuːn/|12 giờ trưa
+Midday|/ˌmɪdˈdeɪ/|Giữa trưa
+Midnight|/ˈmɪd.naɪt/|Nửa đêm
+A.M.|/ˌeɪˈem/|Trước 12 giờ trưa
+P.M.|/ˌpiːˈem/|Từ 12 giờ trưa đến trước nửa đêm
+Time zone|/ˈtaɪm zoʊn/|Múi giờ
+Alarm clock|/əˈlɑːrm klɑːk/|Đồng hồ báo thức
+Stopwatch|/ˈstɑːp.wɑːtʃ/|Đồng hồ bấm giờ
+Timer|/ˈtaɪ.mɚ/|Bộ hẹn giờ`)},
+  {title:'Parts of the Day',items:vocab(`Morning|/ˈmɔːr.nɪŋ/|Buổi sáng
+Early morning|/ˈɝː.li ˈmɔːr.nɪŋ/|Sáng sớm
+Late morning|/leɪt ˈmɔːr.nɪŋ/|Cuối buổi sáng
+Noon|/nuːn/|Buổi trưa
+Afternoon|/ˌæf.tɚˈnuːn/|Buổi chiều
+Evening|/ˈiːv.nɪŋ/|Buổi tối
+Night|/naɪt/|Ban đêm
+Midnight|/ˈmɪd.naɪt/|Nửa đêm
+Dawn|/dɔːn/|Bình minh, rạng đông
+Sunrise|/ˈsʌn.raɪz/|Mặt trời mọc
+Sunset|/ˈsʌn.set/|Mặt trời lặn
+Dusk|/dʌsk/|Chập tối`)}],
+  examples:samples(`What time is it?|Mấy giờ rồi?
+It's seven thirty.|Bây giờ là 7 giờ 30.
+What time do you wake up?|Bạn thức dậy lúc mấy giờ?
+I wake up at six o'clock.|Tôi thức dậy lúc 6 giờ.
+What time does your class start?|Lớp học của bạn bắt đầu lúc mấy giờ?
+It starts at seven fifteen.|Lớp bắt đầu lúc 7 giờ 15.`),
+  notes:['Dùng “at” với giờ cụ thể: at 7:30, at noon, at midnight.','12:00 PM = noon; 12:00 AM = midnight.','Giờ kiểu Mỹ thường đọc 7:45 là seven forty-five; cũng có thể nói a quarter to eight.']},
+ {name:'Time Expressions',vn:'Các cụm từ chỉ thời gian',icon:'⏳',groups:[
+  {title:'Present, Past & Future',items:vocab(`Now|/naʊ/|Bây giờ
+Right now|/raɪt naʊ/|Ngay bây giờ
+At the moment|/æt ðə ˈmoʊ.mənt/|Vào lúc này
+At present|/æt ˈprez.ənt/|Hiện tại
+Currently|/ˈkɝː.ənt.li/|Hiện nay
+Recently|/ˈriː.sənt.li/|Gần đây
+Lately|/ˈleɪt.li/|Gần đây
+In the past|/ɪn ðə pæst/|Trong quá khứ
+In the future|/ɪn ðə ˈfjuː.tʃɚ/|Trong tương lai
+From now on|/frəm naʊ ɑːn/|Từ bây giờ trở đi
+For now|/fɚ naʊ/|Tạm thời, lúc này
+Sooner or later|/ˈsuː.nɚ ɔːr ˈleɪ.t̬ɚ/|Sớm muộn gì`)},
+  {title:'Frequency',items:vocab(`Always|/ˈɔːl.weɪz/|Luôn luôn
+Usually|/ˈjuː.ʒu.ə.li/|Thường xuyên
+Often|/ˈɔː.fən/|Thường
+Sometimes|/ˈsʌm.taɪmz/|Thỉnh thoảng
+Occasionally|/əˈkeɪ.ʒən.əl.i/|Đôi khi
+Rarely|/ˈrer.li/|Hiếm khi
+Seldom|/ˈsel.dəm/|Hiếm khi
+Never|/ˈnev.ɚ/|Không bao giờ
+Daily|/ˈdeɪ.li/|Hằng ngày
+Weekly|/ˈwiːk.li/|Hằng tuần
+Monthly|/ˈmʌnθ.li/|Hằng tháng
+Yearly|/ˈjɪr.li/|Hằng năm
+Once a day|/wʌns ə deɪ/|Một lần một ngày
+Twice a week|/twaɪs ə wiːk/|Hai lần một tuần
+Three times a month|/θriː taɪmz ə mʌnθ/|Ba lần một tháng
+Four times a year|/fɔːr taɪmz ə jɪr/|Bốn lần một năm
+Every other day|/ˈev.ri ˈʌð.ɚ deɪ/|Cách một ngày
+Once in a while|/wʌns ɪn ə waɪl/|Thỉnh thoảng`)},
+  {title:'Time Relationships',items:vocab(`Before|/bɪˈfɔːr/|Trước
+After|/ˈæf.tɚ/|Sau
+During|/ˈdʊr.ɪŋ/|Trong suốt, trong lúc
+Until|/ənˈtɪl/|Cho đến khi
+Since|/sɪns/|Kể từ
+For|/fɔːr/|Trong khoảng thời gian
+Already|/ɔːlˈred.i/|Đã rồi
+Yet|/jet/|Chưa, đã ... chưa
+Still|/stɪl/|Vẫn
+Just|/dʒʌst/|Vừa mới
+Soon|/suːn/|Sớm, chẳng bao lâu nữa
+Later|/ˈleɪ.t̬ɚ/|Sau đó, muộn hơn
+Immediately|/ɪˈmiː.di.ət.li/|Ngay lập tức
+Eventually|/ɪˈven.tʃu.ə.li/|Cuối cùng, rốt cuộc
+Meanwhile|/ˈmiːn.waɪl/|Trong khi đó`)},
+  {title:'Punctuality & Duration',items:vocab(`On time|/ɑːn taɪm/|Đúng giờ
+In time|/ɪn taɪm/|Kịp giờ
+Early|/ˈɝː.li/|Sớm
+Late|/leɪt/|Muộn
+Too early|/tuː ˈɝː.li/|Quá sớm
+Too late|/tuː leɪt/|Quá muộn
+In advance|/ɪn ədˈvæns/|Trước thời hạn
+Ahead of time|/əˈhed əv taɪm/|Trước thời gian dự kiến
+At the same time|/æt ðə seɪm taɪm/|Cùng lúc
+From time to time|/frəm taɪm tə taɪm/|Thỉnh thoảng
+For a while|/fɚ ə waɪl/|Một lúc, một thời gian
+All day|/ɔːl deɪ/|Cả ngày
+All night|/ɔːl naɪt/|Cả đêm
+All week|/ɔːl wiːk/|Cả tuần
+Two days ago|/tuː deɪz əˈɡoʊ/|Hai ngày trước
+In three days|/ɪn θriː deɪz/|Ba ngày nữa
+Within three days|/wɪˈðɪn θriː deɪz/|Trong vòng ba ngày
+As soon as possible|/æz suːn æz ˈpɑː.sə.bəl/|Càng sớm càng tốt`)}],
+  examples:samples(`The train arrived on time.|Tàu đến đúng giờ theo lịch.
+I arrived in time for the meeting.|Tôi đến kịp cuộc họp.
+I will finish it within three days.|Tôi sẽ hoàn thành trong vòng ba ngày.`),
+  notes:['“In three days” thường nghĩa là ba ngày nữa.','“Within three days” nghĩa là trong vòng ba ngày, không muộn hơn thời hạn đó.']},
+ {name:'Useful Grammar',vn:'Giới từ và cấu trúc thời gian',icon:'📘',groups:[
+  {title:'Prepositions of Time',items:vocab(`At|/æt/|Vào lúc – giờ cụ thể
+On|/ɑːn/|Vào – thứ, ngày cụ thể
+In|/ɪn/|Vào – tháng, năm, mùa, các buổi
+Before|/bɪˈfɔːr/|Trước
+After|/ˈæf.tɚ/|Sau
+During|/ˈdʊr.ɪŋ/|Trong suốt, trong lúc
+Since|/sɪns/|Kể từ một mốc thời gian
+For|/fɔːr/|Trong một khoảng thời gian
+Until|/ənˈtɪl/|Cho đến
+By|/baɪ/|Không muộn hơn
+From ... to ...|/frəm ... tuː .../|Từ ... đến ...
+Between ... and ...|/bɪˈtwiːn ... ænd .../|Trong khoảng giữa ... và ...
+Within|/wɪˈðɪn/|Trong vòng
+Throughout|/θruːˈaʊt/|Xuyên suốt`)},
+  {title:'Usage & Patterns',items:vocab(`At seven o'clock|/æt ˈsev.ən əˈklɑːk/|Lúc bảy giờ
+At noon|/æt nuːn/|Vào giữa trưa
+On Monday|/ɑːn ˈmʌn.deɪ/|Vào thứ Hai
+On November ninth|/ɑːn noʊˈvem.bɚ naɪnθ/|Vào ngày 9 tháng 11
+In June|/ɪn dʒuːn/|Vào tháng Sáu
+In 2026|/ɪn ˈtwen.ti ˌtwen.ti ˈsɪks/|Vào năm 2026
+In summer|/ɪn ˈsʌm.ɚ/|Vào mùa hè
+In the morning|/ɪn ðə ˈmɔːr.nɪŋ/|Vào buổi sáng
+Before eight|/bɪˈfɔːr eɪt/|Trước tám giờ
+After lunch|/ˈæf.tɚ lʌntʃ/|Sau bữa trưa
+Since Monday|/sɪns ˈmʌn.deɪ/|Kể từ thứ Hai
+For two hours|/fɚ tuː aʊɚz/|Trong hai giờ
+During the holiday|/ˈdʊr.ɪŋ ðə ˈhɑː.lə.deɪ/|Trong kỳ nghỉ
+Until Friday|/ənˈtɪl ˈfraɪ.deɪ/|Cho đến thứ Sáu
+By Friday|/baɪ ˈfraɪ.deɪ/|Chậm nhất là thứ Sáu
+From Monday to Friday|/frəm ˈmʌn.deɪ tə ˈfraɪ.deɪ/|Từ thứ Hai đến thứ Sáu`)}],
+  examples:samples(`The train arrived on time.|Tàu đến đúng giờ theo lịch.
+I arrived in time for the meeting.|Tôi đến kịp cuộc họp.
+I have lived here since 2020.|Tôi đã sống ở đây từ năm 2020.
+I have lived here for six years.|Tôi đã sống ở đây được sáu năm.
+Finish it by Friday.|Hoàn thành chậm nhất vào thứ Sáu.
+Stay here until Friday.|Ở đây cho đến thứ Sáu.`),
+  notes:['Sai: in Monday → Đúng: on Monday.','Sai: on July → Đúng: in July.','Sai: at 2026 → Đúng: in 2026.','Sai: in 7 o’clock → Đúng: at 7 o’clock.','Sai: in night → Đúng: at night.','Sai: in Friday morning → Đúng: on Friday morning.','Sai: on every Monday → Đúng: every Monday.']},
+ {name:'Common Questions',vn:'Câu hỏi giao tiếp về thời gian',icon:'💬',groups:[
+  {title:'Questions & Answers (American IPA)',items:vocab(`What day is it today?|/wʌt deɪ ɪz ɪt təˈdeɪ/|Hôm nay là thứ mấy?
+Today is Monday.|/təˈdeɪ ɪz ˈmʌn.deɪ/|Hôm nay là thứ Hai.
+What day is tomorrow?|/wʌt deɪ ɪz təˈmɑː.roʊ/|Ngày mai là thứ mấy?
+Tomorrow is Tuesday.|/təˈmɑː.roʊ ɪz ˈtuːz.deɪ/|Ngày mai là thứ Ba.
+What's the date today?|/wʌts ðə deɪt təˈdeɪ/|Hôm nay là ngày bao nhiêu?
+It's November ninth.|/ɪts noʊˈvem.bɚ naɪnθ/|Hôm nay là ngày 9 tháng 11.
+What month is it?|/wʌt mʌnθ ɪz ɪt/|Bây giờ là tháng mấy?
+It's November.|/ɪts noʊˈvem.bɚ/|Bây giờ là tháng Mười Một.
+When is your birthday?|/wen ɪz jʊr ˈbɝːθ.deɪ/|Sinh nhật bạn vào ngày nào?
+It's on August tenth.|/ɪts ɑːn ˈɑː.ɡəst tenθ/|Sinh nhật tôi vào ngày 10 tháng 8.
+What season is it?|/wʌt ˈsiː.zən ɪz ɪt/|Bây giờ là mùa gì?
+It's summer.|/ɪts ˈsʌm.ɚ/|Bây giờ là mùa hè.
+What's your favorite season?|/wʌts jʊr ˈfeɪ.vɚ.ɪt ˈsiː.zən/|Mùa yêu thích của bạn là mùa nào?
+My favorite season is spring.|/maɪ ˈfeɪ.vɚ.ɪt ˈsiː.zən ɪz sprɪŋ/|Mùa yêu thích của tôi là mùa xuân.
+What's the weather like in winter?|/wʌts ðə ˈweð.ɚ laɪk ɪn ˈwɪn.t̬ɚ/|Thời tiết mùa đông như thế nào?
+It's usually cold in winter.|/ɪts ˈjuː.ʒu.ə.li koʊld ɪn ˈwɪn.t̬ɚ/|Mùa đông thường lạnh.
+What time is it?|/wʌt taɪm ɪz ɪt/|Bây giờ là mấy giờ?
+It's seven thirty.|/ɪts ˈsev.ən ˈθɝː.ti/|Bây giờ là 7 giờ 30.
+What time do you wake up?|/wʌt taɪm duː ju weɪk ʌp/|Bạn thức dậy lúc mấy giờ?
+I wake up at six thirty.|/aɪ weɪk ʌp æt sɪks ˈθɝː.ti/|Tôi thức dậy lúc 6 giờ 30.
+What time does the meeting start?|/wʌt taɪm dʌz ðə ˈmiː.tɪŋ stɑːrt/|Cuộc họp bắt đầu lúc mấy giờ?
+It starts at nine a.m.|/ɪt stɑːrts æt naɪn ˌeɪˈem/|Cuộc họp bắt đầu lúc 9 giờ sáng.
+How long does it take?|/haʊ lɔːŋ dʌz ɪt teɪk/|Việc đó mất bao lâu?
+It takes about twenty minutes.|/ɪt teɪks əˈbaʊt ˈtwen.ti ˈmɪn.ɪts/|Việc đó mất khoảng 20 phút.
+How often do you study English?|/haʊ ˈɔː.fən duː ju ˈstʌd.i ˈɪŋ.ɡlɪʃ/|Bạn học tiếng Anh bao lâu một lần?
+I study English three times a week.|/aɪ ˈstʌd.i ˈɪŋ.ɡlɪʃ θriː taɪmz ə wiːk/|Tôi học tiếng Anh ba lần một tuần.
+What days do you have English classes?|/wʌt deɪz duː ju hæv ˈɪŋ.ɡlɪʃ ˈklæs.ɪz/|Bạn có lớp tiếng Anh vào những thứ mấy?
+I have English classes on Tuesdays and Fridays.|/aɪ hæv ˈɪŋ.ɡlɪʃ ˈklæs.ɪz ɑːn ˈtuːz.deɪz ænd ˈfraɪ.deɪz/|Tôi có lớp tiếng Anh vào thứ Ba và thứ Sáu hằng tuần.
+How many days are there in a week?|/haʊ ˈmen.i deɪz ɑːr ðer ɪn ə wiːk/|Một tuần có bao nhiêu ngày?
+There are seven days in a week.|/ðer ɑːr ˈsev.ən deɪz ɪn ə wiːk/|Một tuần có bảy ngày.
+How many months are there in a year?|/haʊ ˈmen.i mʌnθs ɑːr ðer ɪn ə jɪr/|Một năm có bao nhiêu tháng?
+There are twelve months in a year.|/ðer ɑːr twelv mʌnθs ɪn ə jɪr/|Một năm có mười hai tháng.`)}],
+  examples:[],notes:['Mỗi câu hỏi và câu trả lời đều có phiên âm Mỹ và nghĩa tiếng Việt. Nhấn loa để nghe từng câu.']}
+];
+const TC_GAME_GROUPS=[
+ {label:'Days of the Week',items:CHAPTERS[0].groups[0].items.map(x=>({...x,term:x.term.split(' (')[0],meaning:x.meaning}))},
+ {label:'Months of the Year',items:CHAPTERS[1].groups[0].items.map(x=>({...x,term:x.term.split(' (')[0],meaning:x.meaning.split(' · ')[0]}))},
+ {label:'Seasons of the Year',items:CHAPTERS[2].groups[0].items.filter(x=>x.term!=='Autumn').map(x=>({...x}))}
+];
+// Four standard seasons in the game; both Autumn/Fall stay in the reference book.
+TC_GAME_GROUPS[2].items=CHAPTERS[2].groups[0].items.filter(x=>x.term!=='Fall').map(x=>({...x}));
+const TIME_BOOK={name:'Time & Calendar',lessons:[{number:1,title:'Days, Months & Seasons Games',sections:{Vocabulary:TC_GAME_GROUPS.flatMap(x=>x.items)}}]};
+BOOKS.push(TIME_BOOK);const TC_BOOK_INDEX=BOOKS.length-1;
+let selectedTimeGroups=[true,true,true],tcTimers=new Set(),tcRunToken=0;
+function tcCancel(){tcRunToken++;for(const t of tcTimers)clearTimeout(t);tcTimers.clear();}
+function tcLater(fn,ms){const token=tcRunToken;const id=setTimeout(()=>{tcTimers.delete(id);if(token===tcRunToken)fn()},ms);tcTimers.add(id);}
+window.tcSpeak=function(text){
+ if(!soundOn||!window.speechSynthesis)return;
+ speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang='en-US';u.rate=.9;
+ const voices=speechSynthesis.getVoices()||[];const voice=voices.find(v=>/en[-_]US/i.test(v.lang)&&/female|samantha|jenny|aria|zira/i.test(v.name))||voices.find(v=>/en[-_]US/i.test(v.lang));
+ if(voice)u.voice=voice;speechSynthesis.speak(u);
+};
+// Games in the new book use American English without changing original course audio.
+const oldSpeak=speak;
+speak=function(text,times=1){
+ if(state.book!==TC_BOOK_INDEX)return oldSpeak(text,times);
+ if(!soundOn||!window.speechSynthesis||!text)return Promise.resolve();
+ speechSynthesis.cancel();
+ return new Promise(resolve=>{
+  let done=0;const speakOne=()=>{
+   if(state.book!==TC_BOOK_INDEX||!soundOn){resolve();return}
+   const u=new SpeechSynthesisUtterance(String(text));u.lang='en-US';u.rate=.9;
+   const voices=speechSynthesis.getVoices()||[];u.voice=voices.find(v=>/en[-_]US/i.test(v.lang))||null;
+   u.onend=()=>{done++;if(done>=Math.min(4,times))resolve();else speakOne()};
+   u.onerror=()=>resolve();speechSynthesis.speak(u);
+  };speakOne();
+ });
+};
+function tcTop(crumb,heading,desc){return `<div class="page books-page">${topbar()}<main class="shell tc-shell"><div class="breadcrumbs"><button onclick="renderBooks()">Books</button><span>›</span><button onclick="renderTimeBook()">Time & Calendar</button>${crumb?`<span>›</span><b>${esc(crumb)}</b>`:''}</div><div class="tc-hero"><div><div class="mini-kicker">HENRY ENGLISH • REFERENCE BOOK</div><h1>${heading}</h1><p>${desc}</p></div><span class="tc-hero-icon">📅</span></div>`}
+window.renderTimeBook=function(){stopAll();state.book=null;state.lesson=null;
+ $('#app').innerHTML=tcTop('','Time <span>& Calendar</span>','8 chương kiến thức · American IPA · nghe phát âm từng từ · có game riêng cho thứ, tháng và mùa')+
+ `<div class="tc-chapters">${CHAPTERS.map((c,i)=>`<button class="tc-chapter" onclick="renderTimeChapter(${i})"><span class="tc-chapter-ic">${c.icon}</span><b>${String(i+1).padStart(2,'0')}. ${esc(c.name)}</b><small>${esc(c.vn)}</small><span class="tc-chapter-arrow">→</span></button>`).join('')}</div><button class="tc-game-link" onclick="renderTimeGames()">🎮 <span><b>Vocabulary Games</b><small>Chọn Days • Months • Seasons rồi chơi Flashcard, Quiz, Matching hoặc Chữ bay</small></span> →</button></main></div>`;refreshMicUI();};
+window.renderTimeChapter=function(i){stopAll();const c=CHAPTERS[i];if(!c)return renderTimeBook();
+ const blocks=c.groups.map(g=>`<section class="tc-table-section"><h2>${esc(g.title)} <small>(${g.items.length})</small></h2><div class="tc-table-wrap"><table class="tc-table"><thead><tr><th>English</th><th>American IPA</th><th>Tiếng Việt</th><th>Audio</th></tr></thead><tbody>${g.items.map(item=>`<tr><td class="tc-term">${esc(item.term)}</td><td class="tc-ipa">${esc(item.ipa)}</td><td>${esc(item.meaning)}</td><td><button class="tc-audio" aria-label="Nghe ${esc(item.term)}" onclick="tcSpeak('${jsq(item.term.includes(' – ')?item.term.split(' – ')[1]:item.term.replace(/\s*\([^)]*\)/g,''))}')">🔊</button></td></tr>`).join('')}</tbody></table></div></section>`).join('');
+ const eg=c.examples.length?`<section class="tc-table-section"><h2>Useful Sentences – Câu giao tiếp</h2><div class="tc-examples">${c.examples.map(x=>`<div class="tc-example"><div><b>${esc(x.en)}</b><p>${esc(x.vi)}</p></div><button class="tc-audio" onclick="tcSpeak('${jsq(x.en)}')">🔊</button></div>`).join('')}</div></section>`:'';
+ $('#app').innerHTML=tcTop(c.name,`<span>${c.icon} ${esc(c.name)}</span>`,c.vn+' · Nhấn loa để nghe phát âm chuẩn Mỹ')+`<div class="tc-chapter-actions"><button class="secondary" onclick="renderTimeBook()">← 8 Chapters</button><button class="primary" onclick="renderTimeGames()">🎮 Games</button></div>${blocks}${eg}<section class="tc-notes"><h3>💡 Important Notes</h3>${c.notes.map(n=>`<p>• ${esc(n)}</p>`).join('')}</section><div class="tc-footnav"><button class="secondary" onclick="renderTimeChapter(${(i+7)%8})">← Previous</button><button class="primary" onclick="renderTimeChapter(${(i+1)%8})">Next Chapter →</button></div></main></div>`;refreshMicUI();};
+window.tcTimeToggleGroup=function(i,checked){selectedTimeGroups[i]=!!checked;renderTimeGames(false)};
+window.renderTimeGames=function(reset=false){if(reset)selectedTimeGroups=[true,true,true];stopAll();state.book=TC_BOOK_INDEX;state.lesson=0;state.section='Vocabulary';
+ const positions=TC_GAME_GROUPS.reduce((acc,g,i)=>{const start=acc.length?acc[acc.length-1].end:0;acc.push({start,end:start+g.items.length,i});return acc},[]);
+ const items=TIME_BOOK.lessons[0].sections.Vocabulary;
+ $('#app').innerHTML=tcTop('Vocabulary Games','Select <span>& Play</span>','Chỉ sử dụng những từ thuộc nhóm bạn đã chọn – có thể chọn đồng thời nhiều nhóm')+
+ `<div class="tc-game-settings"><h2>Choose Vocabulary Groups</h2><div class="tc-group-options">${TC_GAME_GROUPS.map((g,i)=>`<label><input type="checkbox" ${selectedTimeGroups[i]?'checked':''} onchange="tcTimeToggleGroup(${i},this.checked)"><span>${esc(g.label)}</span><b>${g.items.length} words</b></label>`).join('')}</div><p class="tc-selected-summary">Đã chọn: <strong>${TC_GAME_GROUPS.reduce((s,g,i)=>s+(selectedTimeGroups[i]?g.items.length:0),0)} words</strong></p></div>
+ <div id="itemGrid" class="tc-selected-items">${items.map((it,i)=>{const gi=positions.find(p=>i>=p.start&&i<p.end)?.i;return `<label class="tc-select-item" style="${selectedTimeGroups[gi]?'':'display:none'}"><input class="learn-check" type="checkbox" value="${i}" ${selectedTimeGroups[gi]?'checked':''} onchange="updateSelectedCount()"><span>${esc(it.term)}<small>${esc(it.ipa)} · ${esc(it.meaning)}</small></span></label>`}).join('')}</div>
+ <div class="practice-bar tc-game-bar"><div class="selected-count">Selected: <span id="selectedCount">${TC_GAME_GROUPS.reduce((s,g,i)=>s+(selectedTimeGroups[i]?g.items.length:0),0)}</span></div><button onclick="startFlash()">🃏 Flashcard</button><button onclick="startMCQ()">❓ Quiz</button><button onclick="startMatching()">🔗 Matching</button><button class="game" onclick="startFind()">✨ Chữ bay</button></div></main></div>`;refreshMicUI();};
+
+// Restore original page structure and append one extra dedicated book cover/card.
+const oldBooks=renderBooks;
+renderBooks=function(){oldBooks();const grid=$('.book-grid-v3');if(!grid)return;
+ const bookHero=$('.book-hero p');if(bookHero)bookHero.textContent='Foundation 1–3 • English Bridge • Alphabet • Colors • Vietnam • Time & Calendar';
+ grid.insertAdjacentHTML('beforeend',`<article class="v3-book-card tc-book"><button class="v3-book-button" onclick="renderTimeBook()"><div class="real-cover tc-book-cover"><div class="tc-cover-inner"><div class="tc-cover-top">HENRY ENGLISH</div><div class="tc-cover-title">Time &<br>Calendar</div><div class="tc-cover-emojis">📅 🕒 🌸</div><div class="tc-cover-bottom">REFERENCE BOOK</div></div></div><div class="v3-book-copy"><span class="course-tag">REFERENCE & GAMES</span><h3>Time & Calendar</h3><p>Days • Months • Seasons • Dates • Time</p><div class="v3-open">Open book <b>→</b></div></div></button></article>`);
+};
+const oldAlphabetCard=alphabetCardHTML;
+alphabetCardHTML=function(){return oldAlphabetCard().replace('Letters • flying letters • 50 animals • 50 names • 40 codes','Letters • Numbers 0–100 • Spelling • Games');};
+const oldAlphabetHub=renderAlphabetHub;
+renderAlphabetHub=function(){oldAlphabetHub();const grid=$('.alpha-mode-grid');if(!grid)return;
+ const intro=$('.alpha-hero p');if(intro)intro.textContent='Học chữ cái A–Z và số 0–100: bảng có phiên âm Mỹ, nghe phát âm, luyện chọn số và spelling.';
+ grid.insertAdjacentHTML('beforeend',`
+ <button class="alpha-mode" onclick="renderNumbersReference()"><div class="icon">🔢</div><h3>Numbers Reference</h3><p>Bảng 0–100, số hàng trăm, hàng nghìn và triệu. Mỗi số đều có IPA Mỹ và nút nghe.</p><span class="meta">101 numbers + large numbers</span></button>
+ <button class="alpha-mode" onclick="startNumberGame('quiz')"><div class="icon">🎧</div><h3>Listen & Choose Numbers</h3><p>Hệ thống đọc số bằng tiếng Anh. Nghe rồi chọn 1 trong 4 chữ số.</p><span class="meta">0–20 • 21–50 • 51–100</span></button>
+ <button class="alpha-mode" onclick="startNumberGame('echo')"><div class="icon">🎙️</div><h3>Listen & Repeat Numbers</h3><p>Nghe số, đọc theo, xem chữ số, cách viết và phiên âm.</p><span class="meta">American voice • practice</span></button>`);
+};
+const NUM_BASE=vocab(`zero|/ˈzɪr.oʊ/|Số 0
+one|/wʌn/|Số 1
+two|/tuː/|Số 2
+three|/θriː/|Số 3
+four|/fɔːr/|Số 4
+five|/faɪv/|Số 5
+six|/sɪks/|Số 6
+seven|/ˈsev.ən/|Số 7
+eight|/eɪt/|Số 8
+nine|/naɪn/|Số 9
+ten|/ten/|Số 10
+eleven|/ɪˈlev.ən/|Số 11
+twelve|/twelv/|Số 12
+thirteen|/ˌθɝːˈtiːn/|Số 13
+fourteen|/ˌfɔːrˈtiːn/|Số 14
+fifteen|/ˌfɪfˈtiːn/|Số 15
+sixteen|/ˌsɪksˈtiːn/|Số 16
+seventeen|/ˌsev.ənˈtiːn/|Số 17
+eighteen|/ˌeɪˈtiːn/|Số 18
+nineteen|/ˌnaɪnˈtiːn/|Số 19`);
+const NUM_TENS={20:['twenty','/ˈtwen.ti/'],30:['thirty','/ˈθɝː.ti/'],40:['forty','/ˈfɔːr.ti/'],50:['fifty','/ˈfɪf.ti/'],60:['sixty','/ˈsɪks.ti/'],70:['seventy','/ˈsev.ən.ti/'],80:['eighty','/ˈeɪ.ti/'],90:['ninety','/ˈnaɪn.ti/'],100:['one hundred','/wʌn ˈhʌn.drəd/']};
+function numEntry(n){if(n<20)return {n,...NUM_BASE[n]};if(n%10===0){const [term,ipa]=NUM_TENS[n];return {n,term,ipa,meaning:'Số '+n}}
+ const ten=Math.floor(n/10)*10,u=n%10,[word,ipa]=NUM_TENS[ten];return {n,term:word+'-'+NUM_BASE[u].term,ipa:'/'+ipa.slice(1,-1)+' '+NUM_BASE[u].ipa.slice(1,-1)+'/',meaning:'Số '+n};}
+const ALL_NUMBERS=Array.from({length:101},(_,i)=>numEntry(i));
+const LARGE_NUMBERS=vocab(`101 – one hundred one|/wʌn ˈhʌn.drəd wʌn/|Một trăm lẻ một
+150 – one hundred fifty|/wʌn ˈhʌn.drəd ˈfɪf.ti/|Một trăm năm mươi
+200 – two hundred|/tuː ˈhʌn.drəd/|Hai trăm
+500 – five hundred|/faɪv ˈhʌn.drəd/|Năm trăm
+999 – nine hundred ninety-nine|/naɪn ˈhʌn.drəd ˈnaɪn.ti naɪn/|Chín trăm chín mươi chín
+1,000 – one thousand|/wʌn ˈθaʊ.zənd/|Một nghìn
+10,000 – ten thousand|/ten ˈθaʊ.zənd/|Mười nghìn
+100,000 – one hundred thousand|/wʌn ˈhʌn.drəd ˈθaʊ.zənd/|Một trăm nghìn
+1,000,000 – one million|/wʌn ˈmɪl.jən/|Một triệu
+1,000,000,000 – one billion|/wʌn ˈbɪl.jən/|Một tỷ`);
+const NUMBER_TERMS=vocab(`Number|/ˈnʌm.bɚ/|Con số
+Digit|/ˈdɪdʒ.ɪt/|Chữ số
+Counting|/ˈkaʊn.tɪŋ/|Việc đếm
+Cardinal number|/ˈkɑːr.dɪ.nəl ˈnʌm.bɚ/|Số đếm
+Ordinal number|/ˈɔːr.dɪ.nəl ˈnʌm.bɚ/|Số thứ tự
+Odd number|/ɑːd ˈnʌm.bɚ/|Số lẻ
+Even number|/ˈiː.vən ˈnʌm.bɚ/|Số chẵn
+Plus|/plʌs/|Cộng
+Minus|/ˈmaɪ.nəs/|Trừ
+Equals|/ˈiː.kwəlz/|Bằng
+Times|/taɪmz/|Nhân
+Divided by|/dɪˈvaɪ.dɪd baɪ/|Chia cho
+Phone number|/ˈfoʊn ˌnʌm.bɚ/|Số điện thoại
+Price|/praɪs/|Giá tiền
+How many|/haʊ ˈmen.i/|Bao nhiêu (đếm được)
+How much|/haʊ mʌtʃ/|Bao nhiêu (giá tiền, lượng không đếm được)`);
+let numRange='0-20',numGame=null;
+function numberRangeEntries(){const [a,b]=numRange.split('-').map(Number);return ALL_NUMBERS.slice(a,b+1)}
+window.renderNumbersReference=function(){stopAll();numGame=null;state.book=null;state.lesson=null;
+ $('#app').innerHTML=`<div class="page books-page">${topbar()}<main class="shell tc-shell"><div class="breadcrumbs"><button onclick="renderBooks()">Books</button><span>›</span><button onclick="renderAlphabetHub()">Alphabet Lab</button><span>›</span><b>Numbers</b></div><div class="tc-hero"><div><div class="mini-kicker">ALPHABET LAB • NUMBER SKILLS</div><h1>Numbers <span>0–100</span></h1><p>101 số cơ bản • IPA tiếng Anh Mỹ • số lớn • từ vựng toán học • nghe và luyện tập</p></div><span class="tc-hero-icon">🔢</span></div>
+ <div class="tc-chapter-actions"><button class="secondary" onclick="renderAlphabetHub()">← Alphabet Lab</button><button class="primary" onclick="startNumberGame('quiz')">🎮 Play Number Quiz</button><button class="secondary" onclick="startNumberGame('echo')">🔊 Listen & Repeat</button></div>
+ <section class="tc-table-section"><h2>Numbers from 0 to 100</h2><p class="tc-subtitle">Nhấn nút loa để nghe từng số. Các số 21–99 được ghép từ hàng chục và hàng đơn vị.</p><div class="tc-number-grid">${ALL_NUMBERS.map(x=>`<button class="tc-number-card" onclick="tcSpeak('${jsq(x.term)}')"><strong>${x.n}</strong><b>${esc(x.term)}</b><small>${esc(x.ipa)}</small><span>🔊</span></button>`).join('')}</div></section>
+ ${[{title:'Large Numbers – Các số lớn',items:LARGE_NUMBERS},{title:'Number Vocabulary – Từ vựng về số',items:NUMBER_TERMS}].map(g=>`<section class="tc-table-section"><h2>${g.title}</h2><div class="tc-table-wrap"><table class="tc-table"><thead><tr><th>English</th><th>American IPA</th><th>Tiếng Việt</th><th>Audio</th></tr></thead><tbody>${g.items.map(x=>`<tr><td class="tc-term">${esc(x.term)}</td><td class="tc-ipa">${esc(x.ipa)}</td><td>${esc(x.meaning)}</td><td><button class="tc-audio" onclick="tcSpeak('${jsq(x.term.includes(' – ')?x.term.split(' – ')[1]:x.term)}')">🔊</button></td></tr>`).join('')}</tbody></table></div></section>`).join('')}
+ <section class="tc-notes"><h3>💡 Rules & Examples</h3><p>• 13–19: thirteen, fourteen, fifteen… chú ý trọng âm và đuôi -teen.</p><p>• 20, 30, 40, 50…: twenty, thirty, forty, fifty… đuôi -ty.</p><p>• 21–99 (không tròn chục) thường dùng dấu nối: twenty-one, forty-six, ninety-nine.</p><p>• Tiếng Anh Mỹ thường nói: one hundred one; cách thêm “and” (one hundred and one) cũng có thể gặp.</p><p>• Giá tiền: It costs twenty dollars. – Nó có giá 20 đô la.</p><p>• Số điện thoại thường được đọc từng chữ số; số 0 có thể đọc zero hoặc oh trong ngữ cảnh này.</p></section>
+ </main></div>`;refreshMicUI();};
+window.startNumberGame=function(mode){stopAll();const pool=shuffle([...numberRangeEntries()]);numGame={mode,items:pool,i:0,score:0,locked:false};numDraw();};
+window.numSetRange=function(value){if(!['0-20','21-50','51-100','0-100'].includes(value))return;numRange=value;startNumberGame(numGame?.mode||'quiz');};
+function numDraw(){if(!numGame)return;const r=numGame;if(r.i>=r.items.length){const score=r.score;numGame=null;showCelebration(score,r.items.length*100,'Numbers Complete!');return;}
+ r.locked=false;const target=r.items[r.i];const choices=shuffle([target,...shuffle(ALL_NUMBERS.filter(x=>x.n!==target.n)).slice(0,3)]);
+ const quiz=r.mode==='quiz';
+ $('#app').innerHTML=`<div class="page books-page">${topbar()}<main class="shell tc-shell"><div class="breadcrumbs"><button onclick="renderBooks()">Books</button><span>›</span><button onclick="renderAlphabetHub()">Alphabet Lab</button><span>›</span><button onclick="renderNumbersReference()">Numbers</button><span>›</span><b>${quiz?'Number Quiz':'Listen & Repeat'}</b></div><div class="tc-number-stage"><div class="mini-kicker">${quiz?'🎧 LISTEN & CHOOSE':'🔊 LISTEN & REPEAT'} · ${r.i+1} / ${r.items.length}</div><h1>${quiz?'What number do you hear?':'Listen and say the number'}</h1><p>Chọn phạm vi để luyện tập:</p><div class="tc-range">${[['0-20','0–20'],['21-50','21–50'],['51-100','51–100'],['0-100','0–100']].map(([v,label])=>`<button class="${numRange===v?'active':''}" onclick="numSetRange('${v}')">${label}</button>`).join('')}</div>
+ <div class="tc-number-prompt">${quiz?'❔':target.n}</div><button class="tc-listen-btn" onclick="tcSpeak('${jsq(target.term)}')">🔊 Listen Again</button>
+ ${quiz?`<div class="tc-answer-grid">${choices.map(x=>`<button class="tc-answer" data-n="${x.n}" onclick="numAnswer(${x.n},this)">${x.n}</button>`).join('')}</div><div class="tc-game-feedback" id="tcNumFeedback">Nghe rồi chọn số đúng.</div>`:`<h2 class="tc-num-word">${esc(target.term)}</h2><div class="tc-num-ipa">${esc(target.ipa)}</div><p>${esc(target.meaning)}</p><div class="tc-stage-actions"><button class="secondary" onclick="numPrev()">← Previous</button><button class="primary" onclick="numNext()">Next →</button></div>`}
+ <div class="tc-stage-actions"><button class="secondary" onclick="renderAlphabetHub()">← Alphabet Menu</button><button class="secondary" onclick="renderNumbersReference()">📖 Number Reference</button></div></div></main></div>`;refreshMicUI();tcLater(()=>tcSpeak(target.term),260);}
+window.numAnswer=function(n,btn){const r=numGame;if(!r||r.locked)return;r.locked=true;const target=r.items[r.i],ok=target.n===n;
+ $$('.tc-answer').forEach(el=>{el.disabled=true;if(Number(el.dataset.n)===target.n)el.classList.add('correct');if(el===btn&&!ok)el.classList.add('wrong')});
+ const fb=$('#tcNumFeedback');if(fb)fb.innerHTML=`${ok?'✅ Correct!':'❌ Not quite.'} <b>${target.n} – ${esc(target.term)}</b><small>${esc(target.ipa)}</small>`;
+ if(ok)r.score+=100;clickSound(ok?'ok':'bad');tcLater(()=>{if(numGame===r){r.i++;numDraw()}},1400);};
+window.numNext=function(){if(!numGame)return;numGame.i++;tcCancel();numDraw()};
+window.numPrev=function(){if(!numGame)return;numGame.i=Math.max(0,numGame.i-1);tcCancel();numDraw()};
+// Close game audio and pending transitions immediately on any existing navigation.
+const baseStopAll=stopAll;
+stopAll=function(...args){tcCancel();numGame=null;return baseStopAll(...args)};
+})();
+
+</script>
 </body>
 </html>
