@@ -4108,6 +4108,80 @@ renderLogin();
   .login-page .login-card .code-row{grid-template-columns:1fr!important}
 }
 </style>
+<script>
+/* HENRY ENGLISH — final pronunciation/audio synchronisation layer.
+   All English speech is explicitly en-GB. A real UK voice is selected only
+   from voices whose locale is en-GB; no US/other-English fallback is allowed. */
+(function(){
+  'use strict';
+  const synth=window.speechSynthesis;
+  if(!synth || !window.SpeechSynthesisUtterance) return;
+  const norm=s=>String(s||'').replace(/_/g,'-').toLowerCase();
+  const femaleNames=/\b(sonia|libby|maisie|hazel|serena|susan|amy|emma|alice|natasha|olivia|charlotte|freya|martha|rosie|kate|female)\b|google uk english female|microsoft.*(sonia|libby|maisie|hazel)/i;
+  const maleNames=/\b(david|george|ryan|oliver|daniel|guy|mark|male)\b/i;
+  function selectUKVoice(){
+    const list=synth.getVoices?synth.getVoices():[];
+    const candidates=list.filter(v=>/^en-gb(?:-|$)/.test(norm(v.lang)));
+    if(!candidates.length) return null;
+    const rank=v=>(/^en-gb$/.test(norm(v.lang))?100:80)
+      +(femaleNames.test(v.name||'')?60:0)-(maleNames.test(v.name||'')?100:0)
+      +(v.localService?2:0)+(v.default?1:0);
+    candidates.sort((a,b)=>rank(b)-rank(a));
+    return candidates[0]||null;
+  }
+  window.henryFemaleVoice=selectUKVoice;
+  window.henryBritishVoiceStatus=function(){
+    const v=selectUKVoice();
+    if(!v) return {available:false,locale:'en-GB',message:'Thiết bị chưa cung cấp giọng en-GB. Trình duyệt có thể dùng giọng mặc định dù văn bản đã đặt en-GB.'};
+    return {available:true,locale:v.lang,name:v.name,likelyFemale:femaleNames.test(v.name||''),message:'Đã chọn giọng Anh-Anh: '+v.name};
+  };
+  let sequence=0;
+  function speakUK(text,times=1,opts={}){
+    if(!text || (typeof soundOn!=='undefined' && !soundOn)) return Promise.resolve(false);
+    const token=++sequence;
+    try{synth.cancel()}catch(_e){}
+    return new Promise(resolve=>{
+      let count=0,finished=false;
+      const finish=ok=>{if(finished)return;finished=true;resolve(ok)};
+      const run=()=>{
+        if(token!==sequence){finish(false);return;}
+        const u=new SpeechSynthesisUtterance(String(text));
+        u.lang='en-GB';
+        u.rate=opts.rate??0.92;
+        u.pitch=opts.pitch??1.0;
+        const v=selectUKVoice();
+        if(v)u.voice=v;
+        u.onend=()=>{if(token!==sequence)return;count++;if(count<Math.max(1,Math.min(8,Number(times)||1)))window.setTimeout(run,opts.gap??160);else finish(true);};
+        u.onerror=()=>finish(false);
+        try{synth.speak(u)}catch(_e){finish(false)}
+      };
+      run();
+    });
+  }
+  window.henrySpeakBritish=speakUK;
+  window.henryStopBritishSpeech=function(){sequence++;try{synth.cancel()}catch(_e){}};
+  // Replace the main voice entry point used by flashcards, vocabulary and games.
+  window.speak=speakUK;
+  // Keep spelling/letter practice on British letter names, including Z = zed.
+  const letterNames={A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'gee',H:'aitch',I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'are',S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zed'};
+  window.speakLetter=async function(letter){const k=String(letter||'').toUpperCase();return speakUK(letterNames[k]||letter,1,{rate:.9});};
+  window.speakSpelling=async function(word,times=1){const chars=String(word||'').toUpperCase().replace(/[^A-Z]/g,'').split('');for(let i=0;i<times;i++){if(i)await new Promise(r=>setTimeout(r,220));await speakUK(chars.map(c=>letterNames[c]||c).join(', '),1,{rate:.88});}};
+  // The speaking/recognition practice engine is explicitly UK English too.
+  if(typeof window.__v8Voice==='function') window.__v8Voice=function(text,lang='en-GB',rate=.91){
+    if(norm(lang).startsWith('vi')){
+      return new Promise(resolve=>{try{const u=new SpeechSynthesisUtterance(String(text||''));u.lang='vi-VN';u.rate=rate;const vi=synth.getVoices().find(v=>norm(v.lang).startsWith('vi'));if(vi)u.voice=vi;u.onend=()=>resolve(true);u.onerror=()=>resolve(false);synth.cancel();synth.speak(u);}catch(_e){resolve(false)}});
+    }
+    return speakUK(text,1,{rate,pitch:1.0});
+  };
+  window.tcSpeak=function(text){return speakUK(text,1,{rate:.92,pitch:1.0});};
+  window.toggleSound=function(btn){if(typeof soundOn!=='undefined')soundOn=!soundOn;window.henryStopBritishSpeech();if(btn)btn.textContent=soundOn?'🔊':'🔇';};
+  // Update the cached voice whenever the browser finishes loading its voice list.
+  try{synth.onvoiceschanged=()=>{selectUKVoice();};}catch(_e){}
+  // Set the page's language metadata to British English for assistive/browser hints.
+  document.documentElement.setAttribute('lang','en-GB');
+  document.documentElement.setAttribute('data-pronunciation-locale','en-GB');
+})();
+</script>
 </body>
 
 <style id="henry-v19-real-cover-fix">
