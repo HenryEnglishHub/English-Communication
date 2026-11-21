@@ -582,6 +582,11 @@ window.henryFemaleVoice=function(lang='en-GB'){
 </script>
 
 <style>html.hmv-mole-no-scroll,html.hmv-mole-no-scroll body{overflow:hidden!important;overscroll-behavior:none!important}html.hmv-mole-no-scroll #hmV13Overlay{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important}html.hmv-mole-no-scroll .hmv-primary-frame{display:block!important;width:100vw!important;height:100dvh!important}</style>
+
+<style id="henry-prevent-old-screen-flash">
+  /* Keep the app hidden while the original interface and add-on modules initialise. */
+  #app { visibility: hidden; }
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -4274,6 +4279,8 @@ renderLearning=function(name){
  <button onclick="startVNMCQ()">🇻🇳 Nghe Việt • Chọn Anh</button></div></main></div>`;
  refreshMicUI?.();
 };
+/* Reveal the fully initialised interface only after all render overrides are ready. */
+
 </script>
 <style id="henry-factory-printing-book-styles">
 .factory-cover-art{height:310px;margin:16px;border-radius:23px;position:relative;overflow:hidden;color:#fff;padding:23px 22px;background:radial-gradient(circle at 88% 12%,rgba(255,255,255,.22),transparent 25%),linear-gradient(145deg,#10285a 0%,#0b1f4d 48%,#163f78 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 18px 34px rgba(11,31,77,.2)}
@@ -4308,6 +4315,107 @@ renderLearning=function(name){
 .factory-item-card{padding:13px;gap:9px}.factory-practice-bar button{min-width:46%;flex:1}
 .factory-practice-bar .selected-count{width:100%}.factory-group-heading h2{font-size:16px}}
 </style>
+
+
+<style id="henry-final-home-screen">
+/* Match the selected Henry English landing-screen reference */
+html,body,#app{min-height:100%;margin:0}
+#app>.page.login-page{
+  min-height:100dvh!important;height:100dvh!important;overflow:hidden!important;
+  background:#fff!important;display:flex!important;flex-direction:column!important;
+}
+.login-page .topbar{
+  height:76px!important;min-height:76px!important;flex:0 0 76px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  padding:0 clamp(22px,2.2vw,42px)!important;background:rgba(255,255,255,.98)!important;
+  border-bottom:1px solid #e8edf7!important;box-shadow:none!important;position:relative!important;
+}
+.login-page .topbar:after{height:3px!important;width:273px!important;left:0!important;bottom:0!important}
+.login-page .brand{font-size:clamp(22px,1.7vw,30px)!important;gap:12px!important}
+.login-page .brand-mark{width:43px!important;height:43px!important;border-radius:12px!important}
+.login-page .brand-mark i{font-size:24px!important}
+.login-page .nav-actions{display:flex!important;align-items:center!important;gap:clamp(18px,2.4vw,48px)!important}
+.login-page .home-nav-links{display:flex;align-items:center;gap:clamp(22px,2.5vw,50px);margin:0 auto}
+.login-page .home-nav-links button{border:0;background:transparent;color:#17264f;font-weight:850;font-size:15px;padding:12px 2px;white-space:nowrap}
+.login-page .home-nav-links button:hover{color:#f05a00}
+.login-page .home-right-tools{display:flex;align-items:center;gap:10px}
+.login-page .home-right-tools .mic-pill,.login-page .home-right-tools .nav-btn{min-height:46px!important;border-radius:18px!important;padding:0 20px!important}
+.login-page .hero{
+  width:100%!important;max-width:none!important;flex:1 1 auto!important;min-height:0!important;height:auto!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.04fr)!important;
+  align-items:center!important;gap:clamp(12px,2.2vw,42px)!important;
+  padding:clamp(24px,4.5vh,52px) clamp(28px,4.7vw,88px)!important;
+  background:
+   radial-gradient(ellipse at 8% 80%,rgba(255,224,188,.36),transparent 35%),
+   linear-gradient(110deg,#fff 0%,#fffdf9 48%,#eaf3ff 100%)!important;
+}
+.login-page .hero-copy{max-width:900px!important;align-self:center!important;min-width:0}
+.login-page .eyebrow{font-size:16px!important;padding:11px 18px!important;border-radius:999px!important;margin-bottom:17px!important}
+.login-page .hero h1{font-size:clamp(58px,5.8vw,108px)!important;line-height:.93!important;letter-spacing:-.055em!important;margin:12px 0 18px!important;font-weight:1000!important}
+.login-page .hero-copy>p{font-size:clamp(16px,1.2vw,21px)!important;line-height:1.42!important;max-width:760px!important;margin:0 0 20px!important}
+.login-page .pill-row{gap:9px!important;margin:17px 0 30px!important}
+.login-page .pill{font-size:13px!important;padding:10px 14px!important;border-radius:999px!important}
+.login-page .login-card{
+  max-width:100%!important;width:100%!important;padding:22px 26px!important;
+  border-radius:30px!important;border:2px solid #f5d7c5!important;
+  background:rgba(255,255,255,.87)!important;box-shadow:0 15px 38px rgba(27,52,93,.09)!important;
+}
+.login-page .login-title{gap:15px!important;margin-bottom:17px!important}
+.login-page .login-title h2{font-size:clamp(22px,1.8vw,32px)!important;margin:0 0 4px!important}
+.login-page .login-title p{font-size:15px!important;margin:0!important}
+.login-page .login-icon{width:58px!important;height:58px!important;border-radius:18px!important}
+.login-page .code-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:12px!important}
+.login-page .code-input{height:72px!important;border:3px solid #7096ff!important;border-radius:23px!important;font-size:20px!important;padding:0 22px!important;box-shadow:0 0 0 5px rgba(87,132,255,.14)!important}
+.login-page .code-row .primary{height:72px!important;min-width:245px!important;border-radius:21px!important;font-size:18px!important;padding:0 26px!important}
+.login-page .hero-visual{height:100%!important;min-height:0!important;max-height:none!important;border-radius:34px!important;box-shadow:0 28px 65px rgba(34,74,140,.15)!important}
+.login-page .hero-visual img{object-fit:cover!important;object-position:center!important}
+.login-page .hero-badge{display:block!important;left:5%!important;right:5%!important;bottom:22px!important;text-align:center!important;border-radius:24px!important;padding:18px!important}
+@media(max-width:1050px){
+ .login-page .home-nav-links{gap:14px}.login-page .home-nav-links button{font-size:13px}
+ .login-page .hero{grid-template-columns:minmax(0,1fr) minmax(0,.9fr)!important;padding:24px!important}
+ .login-page .code-row{grid-template-columns:1fr}.login-page .code-row .primary{width:100%;min-width:0}
+}
+@media(max-width:760px){
+ .login-page .topbar{height:62px!important;min-height:62px!important;flex-basis:62px!important;padding:0 12px!important}
+ .login-page .brand{font-size:19px!important}.login-page .brand-mark{width:36px!important;height:36px!important}
+ .login-page .home-nav-links{display:none!important}
+ .login-page .hero{display:flex!important;flex-direction:column!important;overflow:auto!important;align-items:stretch!important;padding:22px 16px 26px!important;gap:20px!important}
+ .login-page .hero-copy{width:100%!important}
+ .login-page .eyebrow{font-size:12px!important;padding:8px 12px!important}
+ .login-page .hero h1{font-size:clamp(48px,12vw,68px)!important;margin:10px 0!important}
+ .login-page .hero-copy>p{font-size:14px!important}
+ .login-page .pill-row{gap:6px!important;margin:12px 0 17px!important}
+ .login-page .pill{font-size:11px!important;padding:8px 10px!important}
+ .login-page .login-card{padding:16px!important;border-radius:22px!important}
+ .login-page .login-title h2{font-size:21px!important}.login-page .login-title p{font-size:12px!important}
+ .login-page .login-icon{width:44px!important;height:44px!important}
+ .login-page .code-row{grid-template-columns:1fr!important}
+ .login-page .code-input{height:58px!important;font-size:17px!important}
+ .login-page .code-row .primary{height:58px!important;font-size:16px!important}
+ .login-page .hero-visual{height:340px!important;min-height:340px!important;border-radius:22px!important}
+ .login-page .hero-badge{font-size:11px!important;bottom:10px!important;padding:11px!important}
+}
+</style>
+<script id="henry-selected-home-header">
+/* Navigation is presented on the selected access-code landing screen.
+   It does not bypass the class access-code gate. */
+const _henryHomeTopbar = topbar;
+topbar = function(extra=''){
+ if(!document.querySelector('#app .login-page')) return _henryHomeTopbar(extra);
+ return `<header class="topbar">
+  <button class="brand" onclick="renderLogin()" style="border:0;background:none;padding:0"><span class="brand-mark"><i>✦</i></span><span>Henry English</span></button>
+  <nav class="home-nav-links" aria-label="Main navigation">
+   <button type="button" onclick="document.querySelector('#access')?.focus()">Courses⌄</button>
+   <button type="button" onclick="document.querySelector('#access')?.focus()">Practice⌄</button>
+   <button type="button" onclick="document.querySelector('#access')?.focus()">Games</button>
+   <button type="button" onclick="document.querySelector('#access')?.focus()">Resources⌄</button>
+   <button type="button" onclick="document.querySelector('#access')?.focus()">About⌄</button>
+  </nav>
+  <div class="home-right-tools">${extra}<button class="nav-btn" onclick="toggleSound(this)">🔊</button></div>
+ </header>`;
+};
+renderLogin();
+</script>
 
 </body>
 
